@@ -1,0 +1,38 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--wobble-sm);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+a.row:hover {
+  border-color: var(--edge);
+  background: var(--raised);
+}
+
+.text {
+  min-width: 0;
+}
+
+.name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.meta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--data);
+  font-size: 12px;
+  color: var(--muted);
+}

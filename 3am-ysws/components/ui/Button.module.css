@@ -1,0 +1,110 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--t-control);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  padding: 12px 20px;
+  background: var(--lamp);
+  color: var(--on-lamp);
+  border: 1px solid var(--lamp);
+  border-radius: var(--radius-input);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(24, 21, 18, 0.06);
+}
+
+.root:hover {
+  background: #38342e;
+  border-color: #38342e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(24, 21, 18, 0.12);
+}
+
+.root:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(24, 21, 18, 0.06);
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--edge);
+  color: var(--cream);
+  box-shadow: none;
+  padding: 12px 20px;
+}
+
+.ghost:hover {
+  background: var(--raised);
+  border-color: var(--glow);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.quiet {
+  background: transparent;
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  box-shadow: none;
+  font-size: 14px;
+  padding: 8px 14px;
+}
+
+.quiet:hover {
+  color: var(--cream);
+  background: var(--raised);
+  border-color: var(--glow);
+  box-shadow: none;
+  transform: none;
+}
+
+.danger {
+  background: transparent;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  box-shadow: none;
+  font-size: 14px;
+  padding: 8px 14px;
+}
+
+.danger:hover {
+  background: rgba(185, 28, 28, 0.08);
+  box-shadow: none;
+  transform: none;
+}
+
+.root:disabled,
+.root[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  filter: grayscale(0.6);
+}
+
+.loading {
+  color: var(--lilac);
+  box-shadow: none;
+  transform: none;
+  cursor: progress;
+}
+
+.loading:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root:hover {
+    transform: none;
+  }
+}

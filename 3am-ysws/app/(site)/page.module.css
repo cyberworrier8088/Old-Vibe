@@ -1,0 +1,128 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 64px var(--s5) 48px;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--orchid);
+  background: var(--blush);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(194, 65, 12, 0.2);
+}
+
+.heading {
+  font-family: var(--display);
+  font-size: var(--t-hero);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  max-width: 18ch;
+}
+
+.headingHighlight {
+  color: var(--orchid);
+  display: block;
+}
+
+.lead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--soft);
+  max-width: var(--measure);
+}
+
+.dealGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
+  margin: var(--s3) 0;
+}
+
+.dealCard {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--wobble);
+  padding: var(--s5);
+  box-shadow: var(--drop-quiet);
+}
+
+.dealHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--s2);
+}
+
+.dealTag {
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.dealTagShip {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.dealTagReward {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.dealTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.dealBody {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--lilac);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s2);
+}
+
+.footerNote {
+  font-size: 13.5px;
+  color: var(--muted);
+  font-family: var(--data);
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding: 36px var(--s4) var(--s5);
+  }
+
+  .dealGrid {
+    grid-template-columns: 1fr;
+    gap: var(--s3);
+  }
+}

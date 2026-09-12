@@ -1,0 +1,71 @@
+:root {
+  /* Canvas & Paper Backgrounds */
+  --night: #fbf9f5;
+  --surface: #ffffff;
+  --raised: #f3efe6;
+  --rule: #e6dfd3;
+  --edge: #d8cfbe;
+  --glow: #c5baa6;
+
+  /* Ink & Typography */
+  --cream: #181512;
+  --soft: #38342e;
+  --lilac: #635d55;
+  --muted: #8c8479;
+
+  /* Accents & Stamps */
+  --lamp: #181512;
+  --on-lamp: #ffffff;
+  --orchid: #c2410c;
+  --blush: #fff7ed;
+  --chalk: #e7dfd3;
+  --lamp-bright: #292524;
+
+  /* Feedback Colors */
+  --ok: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --info: #0369a1;
+
+  /* Typography */
+  --display: var(--font-readex), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --body: var(--font-readex), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --wordmark: var(--font-readex), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --data: "SF Mono", Monaco, Inconsolata, "Fira Code", monospace;
+
+  --t-hero: clamp(40px, 6.5vw, 68px);
+  --t-title: 30px;
+  --t-section: 24px;
+  --t-control: 15px;
+  --t-body: 16px;
+  --t-eyebrow: 12px;
+  --t-help: 13.5px;
+  --t-label: 13px;
+  --t-data: 13px;
+
+  --track-eyebrow: 1.5px;
+  --track-label: 1px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+
+  /* Clean Geometry - No quirky wobble */
+  --wobble: 8px;
+  --wobble-sm: 6px;
+  --radius-input: 6px;
+  --radius-pill: 999px;
+
+  /* Clean Shadows */
+  --drop: 0 4px 12px rgba(24, 21, 18, 0.06), 0 1px 2px rgba(24, 21, 18, 0.04);
+  --drop-quiet: 0 1px 3px rgba(24, 21, 18, 0.05);
+  --tilt: 0deg;
+
+  --measure: 68ch;
+  --page: 780px;
+}

@@ -1,0 +1,63 @@
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.side a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--soft);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  transition: all 0.15s ease;
+}
+
+.side a:hover {
+  background: var(--raised);
+  color: var(--cream);
+}
+
+.side a.on {
+  background: var(--raised);
+  border-color: var(--rule);
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.bar {
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--rule);
+}
+
+.bar a {
+  flex: 1;
+  min-height: 48px;
+  padding: 8px 0 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.bar a.on {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.mark {
+  display: block;
+  font-family: var(--data);
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--muted);
+}
+
+.on .mark {
+  color: var(--cream);
+}
