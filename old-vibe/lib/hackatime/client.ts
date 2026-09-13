@@ -2,8 +2,40 @@ export const HACKATIME_STATE_COOKIE = "hackatime_state";
 
 export const HACKATIME_SCOPES = "profile read";
 
-export type HackatimeProfile = { id?: string | number; slack_id?: string };
-export type HackatimeProject = { name: string; total_seconds: number; created_at?: string };
+export type HackatimeTrustFactor = {
+  trust_level?: "green" | "blue" | "yellow" | "red" | string;
+  trust_value?: number;
+};
+
+export type HackatimeProfile = {
+  id?: string | number;
+  emails?: string[];
+  slack_id?: string;
+  github_username?: string;
+  trust_factor?: HackatimeTrustFactor;
+};
+
+export type HackatimeProject = {
+  name: string;
+  total_seconds: number;
+  created_at?: string;
+  most_recent_heartbeat?: string;
+  languages?: string[];
+  archived?: boolean;
+};
+
+export type HackatimeHeartbeat = {
+  id?: number;
+  created_at?: string;
+  time?: number;
+  category?: string;
+  project?: string;
+  language?: string;
+  editor?: string;
+  operating_system?: string;
+  machine?: string;
+  entity?: string;
+};
 
 function base(): string {
   return (process.env.HACKATIME_BASE_URL ?? "https://hackatime.hackclub.com").replace(/\/$/, "");
@@ -83,4 +115,40 @@ export function getHackatimeSummaries(
   const params: Record<string, string> = { start };
   if (end) params.end = end;
   return get<{ data: HackatimeSummaryDay[] }>(token, "/api/v1/authenticated/summaries", params);
+}
+
+export async function getLatestHeartbeat(token: string): Promise<HackatimeHeartbeat | null> {
+  try {
+    const res = await get<HackatimeHeartbeat | { heartbeat: null }>(
+      token,
+      "/api/v1/authenticated/heartbeats/latest",
+    );
+    if (!res || ("heartbeat" in res && res.heartbeat === null)) return null;
+    return res as HackatimeHeartbeat;
+  } catch {
+    return null;
+  }
+}
+
+export async function getHackatimeStreak(token: string): Promise<number | null> {
+  try {
+    const res = await get<{ streak_days?: number }>(token, "/api/v1/authenticated/streak");
+    return typeof res?.streak_days === "number" ? res.streak_days : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getHackatimeProjectsFiltered(
+  token: string,
+  options?: { projects?: string[]; startDate?: string },
+): Promise<{ projects: HackatimeProject[] }> {
+  const params: Record<string, string> = {};
+  if (options?.projects && options.projects.length > 0) {
+    params.projects = options.projects.join(",");
+  }
+  if (options?.startDate) {
+    params.start_date = options.startDate;
+  }
+  return get<{ projects: HackatimeProject[] }>(token, "/api/v1/authenticated/projects", params);
 }

@@ -196,6 +196,113 @@
   border-color: var(--lamp);
 }
 
+.trustBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-family: var(--data);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.trustGreen {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.trustBlue {
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.trustYellow {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.trustRed {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.heartbeatBox {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heartbeatRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.heartbeatEntity {
+  font-family: var(--data);
+  color: #fff;
+  word-break: break-all;
+}
+
+.langPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.langPill {
+  font-family: var(--data);
+  font-size: 11px;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: var(--soft);
+}
+
+.readmeContainer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.readmeTitle {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.readmeContent {
+  background: rgba(10, 12, 18, 0.8);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px;
+  max-height: 380px;
+  overflow-y: auto;
+  font-family: var(--data);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--soft);
+}
+
 @media (max-width: 860px) {
   .split {
     grid-template-columns: 1fr;

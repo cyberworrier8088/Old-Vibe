@@ -5,7 +5,14 @@ import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { User } from "@/lib/db/schema";
 
-import { getHackatimeProjects, getHackatimeSummaries } from "./client";
+import {
+  getHackatimeProfile,
+  getHackatimeProjects,
+  getHackatimeStreak,
+  getHackatimeSummaries,
+  getLatestHeartbeat,
+} from "./client";
+import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
 import { formatHours } from "./format";
 
 export { formatHours };
@@ -28,12 +35,18 @@ export type ProjectAuditBreakdown = {
     hours: string;
     decimalHours: number;
     eligible: boolean;
+    languages?: string[];
+    mostRecentHeartbeat?: string;
     note?: string;
   }>;
   totalSeconds: number;
   totalHours: string;
   totalDecimalHours: number;
   cutoffDate: string;
+  profile?: import("./client").HackatimeProfile | null;
+  latestHeartbeat?: import("./client").HackatimeHeartbeat | null;
+  streakDays?: number | null;
+  allLanguages?: string[];
 };
 
 const TTL_MS = 60_000;
@@ -132,25 +145,70 @@ export async function getMakerProjectBreakdown(
 ): Promise<ProjectAuditBreakdown> {
   const allProjects = await getPickerProjects(user);
 
+  let profile: HackatimeProfile | null = null;
+  let latestHeartbeat: HackatimeHeartbeat | null = null;
+  let streakDays: number | null = null;
+  const projectMetaMap = new Map<string, { languages?: string[]; mostRecentHeartbeat?: string }>();
+
+  if (user.hackatimeToken) {
+    try {
+      const token = open(user.hackatimeToken);
+      const [pRes, hRes, sRes, rawProjectsRes] = await Promise.allSettled([
+        getHackatimeProfile(token),
+        getLatestHeartbeat(token),
+        getHackatimeStreak(token),
+        getHackatimeProjects(token),
+      ]);
+      if (pRes.status === "fulfilled") profile = pRes.value;
+      if (hRes.status === "fulfilled") latestHeartbeat = hRes.value;
+      if (sRes.status === "fulfilled") streakDays = sRes.value;
+      if (rawProjectsRes.status === "fulfilled" && rawProjectsRes.value?.projects) {
+        for (const rp of rawProjectsRes.value.projects) {
+          projectMetaMap.set(rp.name.toLowerCase(), {
+            languages: rp.languages,
+            mostRecentHeartbeat: rp.most_recent_heartbeat,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[hackatime] extra audit data fetch failed:", err);
+    }
+  }
+
+  const allLanguagesSet = new Set<string>();
+  if (latestHeartbeat?.language) allLanguagesSet.add(latestHeartbeat.language);
+
   if (!allProjects || allProjects.length === 0) {
     return {
-      projects: claimedProjectNames.map((name) => ({
-        key: name,
-        seconds: 0,
-        hours: "0h",
-        decimalHours: 0,
-        eligible: false,
-        note: "Hackatime disconnected or no hours recorded after Sep 11",
-      })),
+      projects: claimedProjectNames.map((name) => {
+        const meta = projectMetaMap.get(name.toLowerCase());
+        if (meta?.languages) meta.languages.forEach((l) => allLanguagesSet.add(l));
+        return {
+          key: name,
+          seconds: 0,
+          hours: "0h",
+          decimalHours: 0,
+          eligible: false,
+          languages: meta?.languages,
+          mostRecentHeartbeat: meta?.mostRecentHeartbeat,
+          note: "Hackatime disconnected or no hours recorded after Sep 11",
+        };
+      }),
       totalSeconds: 0,
       totalHours: "0h",
       totalDecimalHours: 0,
       cutoffDate: EVENT_START_DATE,
+      profile,
+      latestHeartbeat,
+      streakDays,
+      allLanguages: Array.from(allLanguagesSet),
     };
   }
 
   let totalSeconds = 0;
   const breakdown = claimedProjectNames.map((name) => {
+    const meta = projectMetaMap.get(name.toLowerCase());
+    if (meta?.languages) meta.languages.forEach((l) => allLanguagesSet.add(l));
     const matched = allProjects.find((p) => p.key.toLowerCase() === name.toLowerCase());
     if (matched) {
       totalSeconds += matched.seconds;
@@ -160,6 +218,8 @@ export async function getMakerProjectBreakdown(
         hours: matched.hours,
         decimalHours: matched.decimalHours,
         eligible: true,
+        languages: meta?.languages,
+        mostRecentHeartbeat: meta?.mostRecentHeartbeat,
         note: matched.cutoffApplied
           ? "Filtered to work logged after Sep 11, 2026"
           : "Tracked in Hackatime",
@@ -171,6 +231,8 @@ export async function getMakerProjectBreakdown(
       hours: "0h",
       decimalHours: 0,
       eligible: false,
+      languages: meta?.languages,
+      mostRecentHeartbeat: meta?.mostRecentHeartbeat,
       note: "No hours logged after Sep 11, 2026 cutoff",
     };
   });
@@ -181,5 +243,9 @@ export async function getMakerProjectBreakdown(
     totalHours: formatHours(totalSeconds),
     totalDecimalHours: Math.round((totalSeconds / 3600) * 10) / 10,
     cutoffDate: EVENT_START_DATE,
+    profile,
+    latestHeartbeat,
+    streakDays,
+    allLanguages: Array.from(allLanguagesSet),
   };
 }

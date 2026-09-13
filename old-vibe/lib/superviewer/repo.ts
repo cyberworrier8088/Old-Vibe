@@ -85,3 +85,33 @@ export async function repoCommitCount(url: string, cap = 2): Promise<number | nu
     return null;
   }
 }
+
+export async function fetchRepoReadmeContent(url: string): Promise<string | null> {
+  const slug = githubSlug(url);
+  if (!slug) return null;
+
+  try {
+    const response = await fetch(`https://api.github.com/repos/${slug}/readme`, {
+      headers: { ...githubHeaders(), Accept: "application/vnd.github.raw+json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (response.ok) {
+      return await response.text();
+    }
+
+    // Fallback: raw.githubusercontent.com
+    const rawRes = await fetch(`https://raw.githubusercontent.com/${slug}/HEAD/README.md`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (rawRes.ok) {
+      return await rawRes.text();
+    }
+    return null;
+  } catch (err) {
+    console.warn("[repo] fetch readme content fallback error:", err);
+    return null;
+  }
+}
