@@ -13,7 +13,7 @@ export const ORGANIZER_NAV: NavItem[] = [
   { href: "/dash/unified", label: "unified" },
   { href: "/dash/items", label: "shop items" },
   { href: "/dash/fulfilment", label: "fulfilment" },
-  { href: "/dash/beans", label: "paper" },
+  { href: "/dash/paper", label: "paper" },
   { href: "/dash/makers", label: "makers" },
 ];
 

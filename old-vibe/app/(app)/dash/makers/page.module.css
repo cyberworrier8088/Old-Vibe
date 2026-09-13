@@ -62,7 +62,8 @@
   color: var(--muted);
 }
 
-.beans {
+.beans,
+.paper {
   color: var(--lamp);
   font-family: var(--data);
 }

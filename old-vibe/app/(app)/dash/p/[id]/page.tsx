@@ -19,7 +19,7 @@ import { isOpen, projectStatus } from "@/lib/projects/status";
 import { getPickerProjects } from "@/lib/hackatime/projects";
 import { reviewIsExternal } from "@/lib/review";
 import { PaperIcon } from "@/components/ui/PaperIcon";
-import { beansForMinutes, hoursLabel } from "@/lib/beans";
+import { hoursLabel, paperForMinutes } from "@/lib/paper";
 
 import { ResendForm } from "./ResendForm";
 import { WithdrawButton } from "./WithdrawButton";
@@ -168,7 +168,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       paper <PaperIcon size={14} />
                     </span>
-                    <span className="tabular">{beansForMinutes(project.approvedMinutes, user.streak)}</span>
+                    <span className="tabular">{paperForMinutes(project.approvedMinutes, user.streak)}</span>
                   </div>
                 </>
               ) : null}

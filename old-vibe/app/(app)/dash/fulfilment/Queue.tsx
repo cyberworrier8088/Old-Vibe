@@ -102,7 +102,7 @@ export function Queue({ rows }: { rows: QueueRow[] }) {
                     variant="danger"
                     loading={working}
                     disabled={!cancelNote.trim()}
-                    onClick={() => patch(order.id, { status: "cancelled", adminNote: cancelNote.trim(), refundBeans: false })}
+                    onClick={() => patch(order.id, { status: "cancelled", adminNote: cancelNote.trim(), refundPaper: false })}
                   >
                     cancel — no refund
                   </Button>
@@ -110,9 +110,9 @@ export function Queue({ rows }: { rows: QueueRow[] }) {
                     variant="danger"
                     loading={working}
                     disabled={!cancelNote.trim()}
-                    onClick={() => patch(order.id, { status: "cancelled", adminNote: cancelNote.trim(), refundBeans: true })}
+                    onClick={() => patch(order.id, { status: "cancelled", adminNote: cancelNote.trim(), refundPaper: true })}
                   >
-                    cancel & refund
+                    cancel & refund paper
                   </Button>
                 </div>
               </div>

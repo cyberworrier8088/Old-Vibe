@@ -7,10 +7,10 @@ import { Banner } from "@/components/ui/Banner";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getCurrentUser } from "@/lib/auth/users";
-import { balanceFor } from "@/lib/beans";
+import { balanceFor } from "@/lib/paper";
 import { getDb } from "@/lib/db";
 import { items } from "@/lib/db/schema";
-import { BEANS_PER_HOUR } from "@/lib/rewards";
+import { PAPER_PER_HOUR } from "@/lib/rewards";
 import { PaperIcon } from "@/components/ui/PaperIcon";
 
 import styles from "./page.module.css";
@@ -49,7 +49,7 @@ export default async function ShopPage() {
         </div>
       }
     >
-      <Banner tone="info" title={`Every approved hour of real coding earns ${BEANS_PER_HOUR} paper`}>
+      <Banner tone="info" title={`Every approved hour of real coding earns ${PAPER_PER_HOUR} paper`}>
         Spend your paper digital currency earned from coding in the Old Vibe shop to buy cool hacker valuable items.
       </Banner>
 

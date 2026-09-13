@@ -9,6 +9,7 @@ export type HackatimeTrustFactor = {
 
 export type HackatimeProfile = {
   id?: string | number;
+  username?: string;
   emails?: string[];
   slack_id?: string;
   github_username?: string;
@@ -179,3 +180,32 @@ export async function getHackatimeHeartbeats(
     return { heartbeats: [] };
   }
 }
+
+export type HackatimeProjectDetails = {
+  name: string;
+  total_seconds: number;
+  languages?: string[];
+  repo_url?: string;
+  total_heartbeats?: number;
+  first_heartbeat?: string;
+  last_heartbeat?: string;
+  most_recent_heartbeat?: string;
+  archived?: boolean;
+};
+
+export async function getHackatimeProjectDetails(
+  token: string,
+  username: string,
+  projectName: string,
+): Promise<HackatimeProjectDetails | null> {
+  try {
+    return await get<HackatimeProjectDetails>(
+      token,
+      `/api/v1/users/${encodeURIComponent(username)}/project/${encodeURIComponent(projectName)}`,
+    );
+  } catch (err) {
+    console.warn(`[hackatime] failed to fetch project details for ${projectName}:`, err);
+    return null;
+  }
+}
+

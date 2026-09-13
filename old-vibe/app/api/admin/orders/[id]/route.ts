@@ -22,6 +22,7 @@ type Body = {
   status?: string;
   tracking?: string;
   adminNote?: string;
+  refundPaper?: boolean;
   refundBeans?: boolean;
 };
 
@@ -63,7 +64,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       })
       .where(eq(orders.id, order.id));
 
-    if (cancelling && body.refundBeans) {
+    if (cancelling && (body.refundPaper ?? body.refundBeans)) {
       await tx.insert(beansLedger).values({
         userSub: order.userSub,
         delta: order.cost,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isOrganizer } from "@/lib/auth/organizer";
 import { getCurrentUser } from "@/lib/auth/users";
-import { applyDecision } from "@/lib/review/decisions";
+import { applyDecision, clearDecision } from "@/lib/review/decisions";
 
 export const dynamic = "force-dynamic";
 
@@ -61,3 +61,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   return NextResponse.json({ ok: true, decision });
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const organizer = await getCurrentUser();
+  if (!isOrganizer(organizer)) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const { id } = await params;
+  const result = await clearDecision(id);
+
+  if (result.status === "not_found") {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+

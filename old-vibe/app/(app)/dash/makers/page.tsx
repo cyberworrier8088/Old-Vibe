@@ -41,7 +41,7 @@ export default async function MakersPage({
         select sum(${projects.approvedMinutes}) from ${projects}
         where ${projects.userSub} = ${users.sub} and ${projects.decision} = 'approved'
       ), 0)::int`,
-      beans: sql<number>`coalesce((
+      paper: sql<number>`coalesce((
         select sum(${beansLedger.delta}) from ${beansLedger}
         where ${beansLedger.userSub} = ${users.sub}
       ), 0)::int`,
@@ -102,7 +102,7 @@ export default async function MakersPage({
                 {rows.map((row) => (
                   <tr key={row.sub}>
                     <td>
-                      <Link href={`/dash/beans?maker=${encodeURIComponent(row.sub)}`}>
+                      <Link href={`/dash/paper?maker=${encodeURIComponent(row.sub)}`}>
                         <span className={styles.name}>{row.name}</span>
                       </Link>
                       <span className={styles.sub}>
@@ -112,7 +112,11 @@ export default async function MakersPage({
                     <td>{row.hackatime ? "yes" : "no"}</td>
                     <td>{row.sent}</td>
                     <td>{hoursLabel(row.approvedMinutes)}</td>
-                    <td className={styles.beans}>{row.beans}</td>
+                    <td className={styles.paper}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        {row.paper} <PaperIcon size={13} />
+                      </span>
+                    </td>
                     <td>{row.orderCount}</td>
                   </tr>
                 ))}

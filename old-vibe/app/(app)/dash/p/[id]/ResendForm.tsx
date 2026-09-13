@@ -77,7 +77,7 @@ export function ResendForm({
     <Panel>
       <PanelLabel>fix it and send it back</PanelLabel>
       <div className={styles.form}>
-        {problem && !problem.field ? <Banner tone="bad">{problem.message}</Banner> : null}
+        {problem ? <Banner tone="bad">{problem.message}</Banner> : null}
 
         <Field
           id={`${ids}-what`}
@@ -130,6 +130,7 @@ export function ResendForm({
           <Button onClick={resend} loading={sending} loadingLabel="sending…">
             send it back
           </Button>
+          {problem ? <span style={{ color: "var(--bad)", fontWeight: 600 }}>Error: Check above or fix fields</span> : null}
         </div>
       </div>
     </Panel>

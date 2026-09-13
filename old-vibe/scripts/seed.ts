@@ -3,8 +3,8 @@ import { projects, users } from "@/lib/db/schema";
 
 const MAKER = {
   sub: "ident!seed0001",
-  email: "hridhaan@hackclub.com",
-  name: "Hridhaan S",
+  email: "imu@hackclub.com",
+  name: "imu",
   slackId: "U0SEED001",
 };
 
@@ -18,23 +18,23 @@ async function seed() {
     .values([
       {
         userSub: MAKER.sub,
-        title: "night mode portfolio",
-        description: "A portfolio that only looks right after dark.",
-        repoUrl: "https://github.com/hridhaan/night-mode-portfolio",
-        demoUrl: "https://example.com/portfolio",
-        thumbnailUrl: "https://example.com/thumb-portfolio.png",
-        hackatimeProjects: ["night-mode-portfolio"],
+        title: "no vibe code",
+        description: "A handcrafted project built without AI autocomplete or prompt engineering.",
+        repoUrl: "https://github.com/imu/no-vibe-code",
+        demoUrl: "https://example.com/no-vibe-code",
+        thumbnailUrl: "https://example.com/thumb-no-vibe-code.png",
+        hackatimeProjects: ["no-vibe-code"],
         submittedAt: new Date(),
         decision: "approved",
         approvedMinutes: 720,
-        noteToMaker: "Lovely work, approved.",
+        noteToMaker: "Lovely handcrafted work, approved.",
         decidedAt: new Date(),
       },
       {
         userSub: MAKER.sub,
         title: "tide, a tiny tidal clock",
         description: "A tiny desk clock that shows the local tide.",
-        repoUrl: "https://github.com/hridhaan/tide",
+        repoUrl: "https://github.com/imu/tide",
         demoUrl: "https://example.com/tide",
         thumbnailUrl: "https://example.com/thumb-tide.png",
         hackatimeProjects: ["tide", "tide-firmware"],
@@ -48,7 +48,7 @@ async function seed() {
     ])
     .onConflictDoNothing();
 
-  console.log("seeded 1 maker and 3 projects");
+  console.log("seeded 1 maker (imu) and 3 projects (including no vibe code)");
   process.exit(0);
 }
 

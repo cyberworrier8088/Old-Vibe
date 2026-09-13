@@ -1,27 +1,25 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { AppShell } from "@/components/app/AppShell";
-import { Banner } from "@/components/ui/Banner";
-import { ButtonLink } from "@/components/ui/Button";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { ProjectStatusWord } from "@/components/ui/StatusWord";
-import { hoursLabel } from "@/lib/beans";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
 import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
-
 import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
+import { paperRateForStreak } from "@/lib/rewards";
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { DecisionForm } from "./DecisionForm";
-import { FraudInspector } from "./FraudInspector";
-import { ReadmeViewer } from "./ReadmeViewer";
+import { ReviewTabs } from "./ReviewTabs";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = { title: "Superviewer • Review" };
+export const metadata: Metadata = { title: "Superviewer • Review Workstation" };
 export const dynamic = "force-dynamic";
 
 const WHEN = new Intl.DateTimeFormat("en-GB", {
@@ -51,6 +49,20 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .select()
     .from(projectJournals)
     .where(eq(projectJournals.projectId, id));
+
+  // Query sibling projects by same maker for double-dipping detection
+  const siblingProjects = await getDb()
+    .select({
+      id: projects.id,
+      title: projects.title,
+      hackatimeProjects: projects.hackatimeProjects,
+      decision: projects.decision,
+      approvedMinutes: projects.approvedMinutes,
+      trackedSeconds: projects.trackedSeconds,
+      submittedAt: projects.submittedAt,
+    })
+    .from(projects)
+    .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id)));
 
   // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
   const [audit, readme] = await Promise.all([
@@ -99,226 +111,149 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  const currentStatus = projectStatus(project);
+
   return (
-    <AppShell title={`Superviewer • ${project.title}`}>
-      <div className={styles.split}>
-        <Panel>
-          <PanelLabel>the submission</PanelLabel>
-          {project.thumbnailUrl ? (
-            <div style={{ margin: "16px 0", borderRadius: 8, overflow: "hidden", border: "1px solid var(--rule)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={project.thumbnailUrl}
-                alt="Project screenshot"
-                style={{ width: "100%", maxHeight: 320, objectFit: "cover", display: "block" }}
-              />
+    <AppShell title={`Review • ${project.title}`}>
+      {/* Top Header Deck */}
+      <div className={styles.headerDeck}>
+        <div className={styles.headerTopRow}>
+          <Link href="/dash/ships" className={styles.backLink}>
+            ← Back to Submissions Queue
+          </Link>
+          <div className={styles.headerStatusRow}>
+            <ProjectStatusWord status={currentStatus} size="m" />
+          </div>
+        </div>
+
+        <div className={styles.headerMain}>
+          <div>
+            <h1 className={styles.projectTitleHeading}>{project.title}</h1>
+            <div className={styles.submittedMeta}>
+              Submitted {project.submittedAt ? WHEN.format(project.submittedAt) : "draft"}
             </div>
-          ) : null}
-          {project.description ? <p className={styles.description} style={{ whiteSpace: "pre-wrap" }}>{project.description}</p> : null}
-          <div className={styles.facts}>
-            <div className={styles.fact}>
-              <span>maker</span>
-              <span>
-                <a
-                  href={`https://hackclub.slack.com/team/${maker.slackId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "var(--lamp)", textDecoration: "underline" }}
-                  title="Open in Hack Club Slack"
-                >
-                  {maker.name} (@{maker.slackId}) ↗
-                </a>
-              </span>
-            </div>
-            {audit.profile?.trust_factor ? (
-              <div className={styles.fact}>
-                <span>trust factor</span>
-                <span>
-                  <span className={`${styles.trustBadge} ${trustBadgeClass}`}>
-                    [TRUST: {trustLevel.toUpperCase()} (score: {audit.profile.trust_factor.trust_value ?? 0})]
-                  </span>
-                </span>
-              </div>
-            ) : null}
+          </div>
+
+          <div className={styles.headerQuickBadges}>
+            <a
+              href={`https://hackclub.slack.com/team/${maker.slackId}`}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.makerSlackBadge}
+              title="Open Maker profile on Hack Club Slack"
+            >
+              <span>{maker.name}</span>
+              <span className={styles.slackHandle}>@{maker.slackId} ↗</span>
+            </a>
+
             {audit.profile?.github_username ? (
-              <div className={styles.fact}>
-                <span>github user</span>
-                <span>
-                  <a
-                    href={`https://github.com/${audit.profile.github_username}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "var(--lamp)", textDecoration: "underline" }}
-                  >
-                    @{audit.profile.github_username} ↗
-                  </a>
-                </span>
-              </div>
+              <a
+                href={`https://github.com/${audit.profile.github_username}`}
+                target="_blank"
+                rel="noreferrer"
+                className={styles.makerGhBadge}
+                title="Open GitHub profile"
+              >
+                <span>GitHub:</span>
+                <span>@{audit.profile.github_username} ↗</span>
+              </a>
             ) : null}
-            {audit.streakDays != null && audit.streakDays > 0 ? (
-              <div className={styles.fact}>
-                <span>coding streak</span>
-                <span>STREAK: {audit.streakDays} days in a row</span>
-              </div>
-            ) : null}
-            <div className={styles.fact}>
-              <span>email</span>
-              <span>{maker.email}</span>
-            </div>
-            <div className={styles.fact}>
-              <span>hackatime</span>
-              <span>{project.hackatimeProjects.join(", ") || "none"}</span>
-            </div>
-            <div className={styles.fact}>
-              <span>sent</span>
-              <span>{project.submittedAt ? WHEN.format(project.submittedAt) : "not sent"}</span>
-            </div>
-            <div className={styles.fact}>
-              <span>status</span>
-              <span>
-                <ProjectStatusWord status={projectStatus(project)} size="s" />
+
+            {maker.streak > 0 ? (
+              <span className={styles.streakBadge} title="Current coding streak">
+                {maker.streak}d streak
               </span>
-            </div>
-          </div>
-
-          {/* Superviewer Hackatime Audit & Heartbeat Card */}
-          {project.hackatimeProjects.length > 0 ? (
-            <div className={styles.auditCard}>
-              <div className={styles.auditHeader}>
-                <div className={styles.auditTitle}>
-                  <span>[HACKATIME AUDIT]</span>
-                </div>
-                <div className={styles.auditTotal}>{totalHoursDecimal}h ({totalHoursFormatted})</div>
-              </div>
-              <div className={styles.cutoffNotice}>
-                CUTOFF RULE: Work logged prior to <strong>11 Sep 2026</strong> is excluded.
-              </div>
-
-              {audit.allLanguages && audit.allLanguages.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase" }}>Languages Detected:</span>
-                  <div className={styles.langPills}>
-                    {audit.allLanguages.map((lang) => (
-                      <span key={lang} className={styles.langPill}>
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Heartbeat Inspection Box */}
-              {audit.latestHeartbeat ? (
-                <div className={styles.heartbeatBox}>
-                  <div className={styles.heartbeatRow}>
-                    <span style={{ color: "#f5a623", fontWeight: 600 }}>[LATEST HEARTBEAT]</span>
-                    <span style={{ color: "var(--soft)" }}>{audit.latestHeartbeat.project}</span>
-                  </div>
-                  {audit.latestHeartbeat.entity ? (
-                    <div className={styles.heartbeatRow}>
-                      <span style={{ color: "var(--muted)" }}>Active File:</span>
-                      <span className={styles.heartbeatEntity}>{audit.latestHeartbeat.entity}</span>
-                    </div>
-                  ) : null}
-                  <div className={styles.heartbeatRow} style={{ color: "var(--muted)", fontSize: 11 }}>
-                    <span>
-                      {audit.latestHeartbeat.editor || "Editor"} · {audit.latestHeartbeat.operating_system || "OS"}
-                    </span>
-                    <span>{audit.latestHeartbeat.language || "Code"}</span>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className={styles.auditList}>
-                {audit.projects.map((p) => (
-                  <div key={p.key} className={styles.auditItem}>
-                    <div>
-                      <span className={styles.auditItemName}>{p.key}</span>
-                      {p.languages && p.languages.length > 0 ? (
-                        <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                          {p.languages.join(", ")}
-                        </div>
-                      ) : null}
-                      <div style={{ fontSize: 11, color: p.eligible ? "var(--muted)" : "var(--bad)" }}>
-                        {p.note}
-                      </div>
-                    </div>
-                    <span className={styles.auditItemHours}>{p.hours}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Powerful Internal Fraud Inspector with Download & Raw Stream */}
-          <FraudInspector
-            projectId={project.id}
-            heartbeats={audit.rawHeartbeats}
-            totalHeartbeatsCount={audit.totalHeartbeatsCount}
-            fraudAnalysis={audit.fraudAnalysis}
-            claimedProjects={project.hackatimeProjects}
-          />
-
-          <div className={styles.choices} style={{ marginTop: 16 }}>
-            {project.repoUrl ? (
-              <ButtonLink href={project.repoUrl} variant="quiet" target="_blank" rel="noreferrer">
-                view repo ↗
-              </ButtonLink>
             ) : null}
-            {project.demoUrl ? (
-              <ButtonLink href={project.demoUrl} variant="quiet" target="_blank" rel="noreferrer">
-                live demo ↗
-              </ButtonLink>
+
+            {audit.profile?.trust_factor ? (
+              <span
+                className={`${styles.trustBadge} ${trustBadgeClass}`}
+                title="Hackatime trust score"
+              >
+                Trust: {trustLevel.toUpperCase()} ({audit.profile.trust_factor.trust_value ?? 0})
+              </span>
             ) : null}
           </div>
+        </div>
+      </div>
 
-          {/* High-Contrast Formatted README & Code Viewer */}
-          <ReadmeViewer
-            initialReadme={readme}
-            repoUrl={project.repoUrl}
+      {/* Two-Column Workstation Layout */}
+      <div className={styles.workstationGrid}>
+        {/* Left Column: Primary Inspection Workstation */}
+        <div className={styles.leftColumn}>
+          <ReviewTabs
+            project={project}
+            maker={maker}
+            audit={audit}
+            readme={readme}
             alternateRepoUrl={alternateRepoUrl}
-            projectId={project.id}
+            journals={journals}
+            totalHoursDecimal={totalHoursDecimal}
+            totalHoursFormatted={totalHoursFormatted}
+            siblingProjects={siblingProjects}
           />
+        </div>
 
-          {journals.length > 0 ? (
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--rule)" }}>
-              <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)", marginBottom: 12 }}>
-                Maker Dev Notes & Journals ({journals.length})
-              </h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {journals.map((j) => (
-                  <div key={j.id} style={{ background: "var(--raised)", padding: 12, borderRadius: 6, border: "1px solid var(--rule)" }}>
-                    <div style={{ fontSize: 11, fontFamily: "var(--data)", color: "var(--muted)", marginBottom: 4 }}>
-                      {WHEN.format(j.createdAt)}
-                    </div>
-                    <p style={{ margin: 0, fontSize: 14, whiteSpace: "pre-wrap" }}>{j.content}</p>
-                  </div>
-                ))}
+        {/* Right Column: Sticky Review Action Deck */}
+        <div className={styles.rightColumn}>
+          <div className={styles.stickyDeck}>
+            <Panel>
+              <PanelLabel>{decided ? "Review Decision" : "Record Decision"}</PanelLabel>
+              <DecisionForm
+                id={project.id}
+                trackedProjects={project.hackatimeProjects.length}
+                defaultHours={totalHoursDecimal}
+                totalTrackedFormatted={totalHoursFormatted}
+                makerStreak={maker.streak}
+                makerName={maker.name}
+                initialDecided={decided}
+                initialDecision={project.decision}
+                initialApprovedMinutes={project.approvedMinutes}
+                initialNote={project.noteToMaker}
+              />
+            </Panel>
+
+            <Panel>
+              <PanelLabel>Maker Overview</PanelLabel>
+              <div className={styles.makerOverviewList}>
+                <div className={styles.overviewItem}>
+                  <span className={styles.overviewKey}>Email</span>
+                  <span className={styles.overviewVal}>{maker.email}</span>
+                </div>
+                <div className={styles.overviewItem}>
+                  <span className={styles.overviewKey}>Hackatime Project(s)</span>
+                  <span className={styles.overviewVal}>
+                    {project.hackatimeProjects.join(", ") || "None"}
+                  </span>
+                </div>
+                <div className={styles.overviewItem}>
+                  <span className={styles.overviewKey}>Tracked Eligible</span>
+                  <span className={styles.overviewValHighlight}>
+                    {totalHoursFormatted} ({totalHoursDecimal}h)
+                  </span>
+                </div>
+                <div className={styles.overviewItem}>
+                  <span className={styles.overviewKey}>Paper Bonus Rate</span>
+                  <span
+                    className={styles.overviewVal}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                  >
+                    {paperRateForStreak(maker.streak).toFixed(1)} <PaperIcon size={14} /> / hr
+                  </span>
+                </div>
               </div>
-            </div>
-          ) : null}
-        </Panel>
+            </Panel>
 
-        <Panel>
-          <PanelLabel>{decided ? "decided" : "record a decision"}</PanelLabel>
-          {decided ? (
-            <Banner tone={project.decision === "approved" ? "ok" : "warn"}>
-              {project.decision === "approved"
-                ? `Approved for ${hoursLabel(project.approvedMinutes)} hours.`
-                : `Recorded as ${project.decision}.`}
-              {project.noteToMaker ? ` "${project.noteToMaker}"` : ""}
-            </Banner>
-          ) : !project.submittedAt ? (
-            <Banner tone="warn">This is still a draft, so there is nothing to decide.</Banner>
-          ) : (
-            <DecisionForm
-              id={project.id}
-              trackedProjects={project.hackatimeProjects.length}
-              defaultHours={totalHoursDecimal}
-              totalTrackedFormatted={totalHoursFormatted}
-            />
-          )}
-        </Panel>
+            <div className={styles.guidelinesBox}>
+              <div className={styles.guidelinesTitle}>Old-Vibe Review Checklist</div>
+              <ul className={styles.guidelinesList}>
+                <li>No AI-generated scaffolding or LLM code wrappers.</li>
+                <li>Verify commit activity occurred during the valid event window.</li>
+                <li>Confirm repo and live demo are accessible and functional.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </AppShell>
   );

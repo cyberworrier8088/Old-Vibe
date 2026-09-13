@@ -5,8 +5,6 @@ import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { readApproved, refreshQueued } from "@/lib/ysws/submissions";
-import { Banner } from "@/components/ui/Banner";
-
 import { Rows } from "./Rows";
 import styles from "./page.module.css";
 
@@ -22,9 +20,6 @@ export default async function UnifiedPage() {
 
   return (
     <AppShell title="unified">
-      <Banner tone="info" title="Reviewing tool coming soon please wait">
-        We are removing the ARI reviewing tool. The new reviewing tool is coming soon.
-      </Banner>
 
       <Panel>
         <PanelLabel>

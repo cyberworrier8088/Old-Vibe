@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { ProjectStatusWord } from "@/components/ui/StatusWord";
-import { hoursLabel } from "@/lib/beans";
+import { hoursLabel } from "@/lib/paper";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
@@ -15,14 +15,20 @@ import type { ProjectStatus } from "@/lib/status";
 
 import styles from "./page.module.css";
 
-export const metadata: Metadata = { title: "submissions" };
+export const metadata: Metadata = { title: "Superviewer • Submissions" };
 export const dynamic = "force-dynamic";
 
-const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+const WHEN = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const FILTERS: { key: string; label: string; matches: (status: ProjectStatus) => boolean }[] = [
   { key: "open", label: "waiting", matches: (status) => status === "queued" },
-  { key: "all", label: "everything", matches: () => true },
+  { key: "draft", label: "draft", matches: (status) => status === "draft" },
+  { key: "all", label: "all projects", matches: () => true },
   { key: "approved", label: "approved", matches: (status) => status === "approved" },
   { key: "changes", label: "changes asked", matches: (status) => status === "changes" },
   { key: "rejected", label: "not approved", matches: (status) => status === "rejected" },
@@ -42,26 +48,35 @@ export default async function ShipsPage({
     .select({ project: projects, maker: users })
     .from(projects)
     .innerJoin(users, eq(projects.userSub, users.sub))
-    .where(isNotNull(projects.submittedAt))
-    .orderBy(desc(projects.submittedAt));
+    .orderBy(desc(projects.createdAt));
+
+  // Compute count for each filter tab
+  const filterCounts = FILTERS.reduce<Record<string, number>>((acc, f) => {
+    acc[f.key] = rows.filter((r) => f.matches(projectStatus(r.project))).length;
+    return acc;
+  }, {});
 
   const shown = rows.filter((row) => active.matches(projectStatus(row.project)));
 
   return (
-    <AppShell title="Superviewer • Submissions">
+    <AppShell title="Superviewer • Submissions Queue">
       <nav className={styles.filters} aria-label="filter submissions">
-        {FILTERS.map((option) => (
-          <Link
-            key={option.key}
-            href={`/dash/ships?filter=${option.key}`}
-            className={[styles.filter, option.key === active.key ? styles.on : null]
-              .filter(Boolean)
-              .join(" ")}
-            aria-current={option.key === active.key ? "page" : undefined}
-          >
-            {option.label}
-          </Link>
-        ))}
+        {FILTERS.map((option) => {
+          const count = filterCounts[option.key] ?? 0;
+          return (
+            <Link
+              key={option.key}
+              href={`/dash/ships?filter=${option.key}`}
+              className={[styles.filter, option.key === active.key ? styles.on : null]
+                .filter(Boolean)
+                .join(" ")}
+              aria-current={option.key === active.key ? "page" : undefined}
+            >
+              <span>{option.label}</span>
+              <span className={styles.filterCount}>{count}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <Panel>
@@ -77,43 +92,58 @@ export default async function ShipsPage({
                 <tr>
                   <th>maker</th>
                   <th>project</th>
-                  <th>sent</th>
+                  <th>submitted</th>
                   <th>hours</th>
                   <th>status</th>
+                  <th style={{ textAlign: "right" }}>action</th>
                 </tr>
               </thead>
               <tbody>
-                {shown.map(({ project, maker }) => (
-                  <tr key={project.id}>
-                    <td>
-                      <span className={styles.maker}>{maker.name}</span>
-                      <span className={styles.sub}>{maker.slackId}</span>
-                    </td>
-                    <td>
-                      <Link href={`/dash/ships/${project.id}`}>{project.title}</Link>
-                      <span className={styles.sub}>
-                        {project.hackatimeProjects.join(", ") || "no hackatime projects"}
-                      </span>
-                    </td>
-                    <td>{project.submittedAt ? WHEN.format(project.submittedAt) : ""}</td>
-                    <td>
-                      {project.approvedMinutes != null ? (
-                        <span style={{ color: "var(--ok)", fontWeight: 600 }}>
-                          {hoursLabel(project.approvedMinutes)}h
+                {shown.map(({ project, maker }) => {
+                  const status = projectStatus(project);
+                  const isQueued = status === "queued";
+                  return (
+                    <tr key={project.id} className={isQueued ? styles.rowQueued : undefined}>
+                      <td>
+                        <span className={styles.maker}>{maker.name}</span>
+                        <span className={styles.sub}>@{maker.slackId}</span>
+                      </td>
+                      <td>
+                        <Link href={`/dash/ships/${project.id}`} className={styles.projectLink}>
+                          {project.title}
+                        </Link>
+                        <span className={styles.sub}>
+                          {project.hackatimeProjects.join(", ") || "no hackatime projects"}
                         </span>
-                      ) : project.trackedSeconds > 0 ? (
-                        <span style={{ color: "var(--cream)", opacity: 0.9 }}>
-                          {Math.round((project.trackedSeconds / 3600) * 10) / 10}h tracked
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      <ProjectStatusWord status={projectStatus(project)} size="s" />
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>{project.submittedAt ? WHEN.format(project.submittedAt) : ""}</td>
+                      <td>
+                        {project.approvedMinutes != null ? (
+                          <span style={{ color: "var(--ok)", fontWeight: 600 }}>
+                            {hoursLabel(project.approvedMinutes)}h approved
+                          </span>
+                        ) : project.trackedSeconds > 0 ? (
+                          <span style={{ color: "var(--cream)", opacity: 0.9 }}>
+                            {Math.round((project.trackedSeconds / 3600) * 10) / 10}h tracked
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td>
+                        <ProjectStatusWord status={status} size="s" />
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <Link
+                          href={`/dash/ships/${project.id}`}
+                          className={isQueued ? styles.actionReviewPrimary : styles.actionReview}
+                        >
+                          {isQueued ? "Review →" : "Inspect →"}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

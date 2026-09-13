@@ -113,7 +113,7 @@ export function SubmitForm({ projects, draft }: { projects: PickerProject[], dra
     <Panel>
       <PanelLabel>your project</PanelLabel>
       <div className={styles.form} onBlur={saveDraft}>
-        {problem && !problem.field ? <Banner tone="bad">{problem.message}</Banner> : null}
+        {problem ? <Banner tone="bad">{problem.message}</Banner> : null}
 
         <div className={styles.row}>
           <Field id={`${ids}-title`} label="what is it called?" error={errorFor("title")}>
@@ -179,7 +179,7 @@ export function SubmitForm({ projects, draft }: { projects: PickerProject[], dra
           <Button onClick={send} loading={sending} loadingLabel="sending…">
             send it in
           </Button>
-          {savedAt ? <span className={styles.saved}>draft saved at {savedAt}</span> : null}
+          {problem ? <span style={{ color: "var(--bad)", fontWeight: 600 }}>Error: Check above or fix fields</span> : savedAt ? <span className={styles.saved}>draft saved at {savedAt}</span> : null}
         </div>
       </div>
     </Panel>

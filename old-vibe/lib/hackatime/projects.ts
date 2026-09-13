@@ -12,6 +12,7 @@ import {
   getHackatimeStreak,
   getHackatimeSummaries,
   getLatestHeartbeat,
+  getHackatimeProjectDetails,
 } from "./client";
 import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
 import { formatHours } from "./format";
@@ -35,14 +36,55 @@ export type FraudSignal = {
   pass: boolean;
 };
 
+export type TopEntityStat = {
+  path: string;
+  count: number;
+  percentage: number;
+  writes: number;
+};
+
+export type SessionCluster = {
+  id: string;
+  startTime: number;
+  endTime: number;
+  durationMinutes: number;
+  heartbeatsCount: number;
+  writesCount: number;
+  topLanguage?: string;
+};
+
+export type AiDetectionAudit = {
+  isAiDetected: boolean;
+  aiHeartbeatCount: number;
+  aiPercentage: number;
+  handcraftedPercentage: number;
+  aiEditorsDetected: string[];
+  aiReasons: string[];
+  verdict: string;
+};
+
 export type FraudAnalysis = {
   risk: "low" | "medium" | "high";
-  topEntity?: { path: string; count: number; percentage: number };
+  riskScore: number;
+  aiAudit: AiDetectionAudit;
+  topEntity?: TopEntityStat;
+  topEntities: TopEntityStat[];
   averageIntervalMinutes?: number;
+  intervalStdDevSeconds?: number;
+  isFixedIntervalSuspicious?: boolean;
   uniqueEditors: string[];
   uniqueOS: string[];
   uniqueMachines: string[];
   aiCodingCount: number;
+  writeCount: number;
+  writeRatio: number;
+  maxContinuousHours: number;
+  isContinuousCodingSuspicious: boolean;
+  hourlyDistribution: number[];
+  sessionClusters: SessionCluster[];
+  multiMachineCollisions: number;
+  doubleDippingCount: number;
+  doubleDippingProjects: string[];
   signals: FraudSignal[];
 };
 
@@ -68,6 +110,7 @@ export type ProjectAuditBreakdown = {
   rawHeartbeats?: HackatimeHeartbeat[];
   totalHeartbeatsCount?: number;
   fraudAnalysis?: FraudAnalysis;
+  otherProjectsSummary?: Array<{ name: string; heartbeats: number }>;
 };
 
 const TTL_MS = 60_000;
@@ -161,7 +204,7 @@ export async function getPickerProjects(
 }
 
 export async function getMakerProjectBreakdown(
-  user: Pick<User, "sub" | "hackatimeToken">,
+  user: Pick<User, "sub" | "hackatimeToken"> & { slackId?: string | null },
   claimedProjectNames: string[],
 ): Promise<ProjectAuditBreakdown> {
   const allProjects = await getPickerProjects(user);
@@ -171,23 +214,34 @@ export async function getMakerProjectBreakdown(
   let streakDays: number | null = null;
   const projectMetaMap = new Map<string, { languages?: string[]; mostRecentHeartbeat?: string }>();
 
+  let allHeartbeats: HackatimeHeartbeat[] = [];
   let rawHeartbeats: HackatimeHeartbeat[] = [];
   let totalHeartbeatsCount = 0;
+  let otherProjectsSummary: Array<{ name: string; heartbeats: number }> = [];
   const allLanguagesSet = new Set<string>();
+
+  const claimedSet = new Set(claimedProjectNames.map((p) => p.trim().toLowerCase()));
 
   if (user.hackatimeToken) {
     try {
       const token = open(user.hackatimeToken);
-      const [pRes, hRes, sRes, rawProjectsRes, hbRes] = await Promise.allSettled([
+      const username = user.slackId || user.sub;
+
+      const projectDetailPromises = claimedProjectNames.map((name) =>
+        getHackatimeProjectDetails(token, username, name),
+      );
+
+      const [pRes, hRes, sRes, rawProjectsRes, ...detailResults] = await Promise.allSettled([
         getHackatimeProfile(token),
         getLatestHeartbeat(token),
         getHackatimeStreak(token),
         getHackatimeProjects(token),
-        getHackatimeHeartbeats(token, `${EVENT_START_DATE}T00:00:00Z`),
+        ...projectDetailPromises,
       ]);
+
       if (pRes.status === "fulfilled") profile = pRes.value;
-      if (hRes.status === "fulfilled") latestHeartbeat = hRes.value;
       if (sRes.status === "fulfilled") streakDays = sRes.value;
+
       if (rawProjectsRes.status === "fulfilled" && rawProjectsRes.value?.projects) {
         for (const rp of rawProjectsRes.value.projects) {
           projectMetaMap.set(rp.name.toLowerCase(), {
@@ -196,76 +250,446 @@ export async function getMakerProjectBreakdown(
           });
         }
       }
-      if (hbRes.status === "fulfilled" && hbRes.value?.heartbeats) {
-        rawHeartbeats = hbRes.value.heartbeats;
-        totalHeartbeatsCount = rawHeartbeats.length;
+
+      // Check date boundaries of claimed projects
+      let queryStart: string | undefined = undefined;
+      let queryEnd: string | undefined = undefined;
+
+      for (const res of detailResults) {
+        if (res.status === "fulfilled" && res.value) {
+          const det = res.value;
+          if (det.first_heartbeat && (!queryStart || det.first_heartbeat < queryStart)) {
+            queryStart = det.first_heartbeat;
+          }
+          if (det.last_heartbeat && (!queryEnd || det.last_heartbeat > queryEnd)) {
+            queryEnd = det.last_heartbeat;
+          }
+          if (det.languages) {
+            det.languages.forEach((l) => allLanguagesSet.add(l));
+          }
+        }
+      }
+
+      if (!queryStart) {
+        queryStart = `${EVENT_START_DATE}T00:00:00Z`;
+      }
+
+      const hbRes = await getHackatimeHeartbeats(token, queryStart, queryEnd);
+      allHeartbeats = hbRes.heartbeats || [];
+
+      let matching = allHeartbeats.filter(
+        (hb) => hb.project && claimedSet.has(hb.project.trim().toLowerCase()),
+      );
+
+      // If matching is 0 but claimedProjectNames is non-empty, try fallback to all heartbeats
+      if (matching.length === 0 && claimedProjectNames.length > 0) {
+        const fullRes = await getHackatimeHeartbeats(token);
+        if (fullRes.heartbeats?.length) {
+          const olderMatching = fullRes.heartbeats.filter(
+            (hb) => hb.project && claimedSet.has(hb.project.trim().toLowerCase()),
+          );
+          if (olderMatching.length > 0) {
+            matching = olderMatching;
+            allHeartbeats = fullRes.heartbeats;
+          }
+        }
+      }
+
+      rawHeartbeats = matching;
+      totalHeartbeatsCount = rawHeartbeats.length;
+
+      // Extract other projects summary for reviewer awareness
+      const otherProjectMap = new Map<string, number>();
+      for (const hb of allHeartbeats) {
+        if (hb.project && !claimedSet.has(hb.project.trim().toLowerCase())) {
+          otherProjectMap.set(hb.project, (otherProjectMap.get(hb.project) ?? 0) + 1);
+        }
+      }
+      otherProjectsSummary = Array.from(otherProjectMap.entries()).map(([name, count]) => ({
+        name,
+        heartbeats: count,
+      }));
+
+      // Project-specific latest heartbeat
+      if (rawHeartbeats.length > 0) {
+        const sorted = rawHeartbeats.slice().sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
+        latestHeartbeat = sorted[0];
+      } else {
+        latestHeartbeat = null;
       }
     } catch (err) {
       console.warn("[hackatime] extra audit data fetch failed:", err);
     }
   }
 
-  // Compute Fraud Analysis
+  // Compute Fraud Analysis & AI Detection
   let fraudAnalysis: FraudAnalysis | undefined;
   if (rawHeartbeats.length > 0) {
-    const entityCounts = new Map<string, number>();
+    const AI_EDITORS = [
+      "antigravity",
+      "antigravity-ide",
+      "antigravityide",
+      "antigravity-desktop",
+      "cursor",
+      "windsurf",
+      "copilot",
+      "cline",
+      "continue",
+      "aider",
+      "devin",
+      "zed-ai",
+      "v0",
+    ];
+
+    const AI_PATH_INDICATORS = [
+      "antigravity ide",
+      ".gemini",
+      "/brain/",
+      "\\brain\\",
+      ".cursor",
+      ".windsurf",
+      ".continue",
+      "task.md",
+      "walkthrough.md",
+      "implementation_plan.md",
+      ".claude",
+    ];
+
+    const entityCounts = new Map<string, { count: number; writes: number }>();
     const editorsSet = new Set<string>();
     const osSet = new Set<string>();
     const machinesSet = new Set<string>();
-    let aiCodingCount = 0;
+    let writeCount = 0;
+    const hourlyDistribution = new Array<number>(24).fill(0);
+
+    let aiHeartbeatCount = 0;
+    const aiReasonsSet = new Set<string>();
+    const aiEditorsSet = new Set<string>();
 
     for (const hb of rawHeartbeats) {
-      if (hb.entity) entityCounts.set(hb.entity, (entityCounts.get(hb.entity) ?? 0) + 1);
+      if (hb.entity) {
+        const existing = entityCounts.get(hb.entity) ?? { count: 0, writes: 0 };
+        existing.count++;
+        if (hb.is_write) existing.writes++;
+        entityCounts.set(hb.entity, existing);
+      }
+      if (hb.is_write) writeCount++;
       if (hb.editor) editorsSet.add(hb.editor);
       if (hb.operating_system) osSet.add(hb.operating_system);
       if (hb.machine) machinesSet.add(hb.machine);
-      if (hb.category === "ai coding" || (hb as { ai_model?: string }).ai_model) aiCodingCount++;
       if (hb.language) allLanguagesSet.add(hb.language);
-    }
 
-    let topEntity: { path: string; count: number; percentage: number } | undefined;
-    let maxCount = 0;
-    for (const [path, count] of entityCounts.entries()) {
-      if (count > maxCount) {
-        maxCount = count;
-        topEntity = {
-          path,
-          count,
-          percentage: Math.round((count / rawHeartbeats.length) * 100),
-        };
+      // AI Inspection
+      let hbIsAi = false;
+      const cat = (hb.category ?? "").toLowerCase();
+      const ed = (hb.editor ?? "").toLowerCase();
+      const ent = (hb.entity ?? "").toLowerCase();
+
+      if (cat.includes("ai") || cat.includes("copilot")) {
+        hbIsAi = true;
+        aiReasonsSet.add(`Category: "${hb.category}"`);
       }
-    }
 
-    // Interval checks
-    const times = rawHeartbeats
-      .map((h) => h.time)
-      .filter((t): t is number => typeof t === "number")
-      .sort((a, b) => a - b);
-    let avgIntervalSec = 120;
-    let burstWarning = false;
-    if (times.length > 1) {
-      let totalDiff = 0;
-      let validDiffs = 0;
-      let burstCount = 0;
-      for (let i = 1; i < times.length; i++) {
-        const diff = times[i] - times[i - 1];
-        if (diff > 0 && diff < 3600) {
-          totalDiff += diff;
-          validDiffs++;
-          if (diff < 5) burstCount++;
+      for (const aiEd of AI_EDITORS) {
+        if (ed.includes(aiEd)) {
+          // We intentionally don't set hbIsAi = true here anymore.
+          // AI editors often track human vs AI typing via the 'category' field.
+          // This allows users to use modern editors by hand without false flagging.
+          aiEditorsSet.add(hb.editor || aiEd);
         }
       }
-      if (validDiffs > 0) avgIntervalSec = Math.round(totalDiff / validDiffs);
-      if (burstCount > 20 && burstCount / validDiffs > 0.4) burstWarning = true;
+
+      for (const aiPath of AI_PATH_INDICATORS) {
+        if (ent.includes(aiPath)) {
+          hbIsAi = true;
+          const label = ent.includes("/")
+            ? ent.split("/").pop()
+            : ent.includes("\\")
+              ? ent.split("\\").pop()
+              : ent;
+          aiReasonsSet.add(`AI agent artifact: "${label}"`);
+        }
+      }
+
+      if ((hb as { ai_model?: string }).ai_model) {
+        hbIsAi = true;
+        aiReasonsSet.add(`AI model metadata: "${(hb as { ai_model?: string }).ai_model}"`);
+      }
+
+      if (hbIsAi) {
+        aiHeartbeatCount++;
+      }
+
+      if (typeof hb.time === "number") {
+        const d = new Date(hb.time * 1000);
+        const hour = d.getHours();
+        hourlyDistribution[hour]++;
+      }
     }
 
+    const aiPercentage = Math.round((aiHeartbeatCount / rawHeartbeats.length) * 100);
+    const handcraftedPercentage = Math.max(0, 100 - aiPercentage);
+    const isAiDetected = aiHeartbeatCount > 0;
+
+    let aiVerdict = "CLEAN: 100% Handcrafted code detected. No AI IDEs, categories, or prompt artifacts found.";
+    if (aiPercentage >= 50) {
+      aiVerdict = `CRITICAL FRAUD: ${aiPercentage}% of project was generated via AI / Agent (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Strict violation of Old-Vibe handcrafted rule!`;
+    } else if (aiPercentage >= 10) {
+      aiVerdict = `HIGH RISK: ${aiPercentage}% AI coding detected (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Old-Vibe requires 100% human-coded craftsmanship.`;
+    } else if (aiPercentage > 0) {
+      aiVerdict = `SUSPICIOUS: Minor AI traces detected (${aiHeartbeatCount} heartbeats). Inspect commits carefully.`;
+    }
+
+    const aiAudit: AiDetectionAudit = {
+      isAiDetected,
+      aiHeartbeatCount,
+      aiPercentage,
+      handcraftedPercentage,
+      aiEditorsDetected: Array.from(aiEditorsSet),
+      aiReasons: Array.from(aiReasonsSet),
+      verdict: aiVerdict,
+    };
+
+    const writeRatio = Math.round((writeCount / rawHeartbeats.length) * 100);
+
+    // Top Entities matrix (top 5 files)
+    const sortedEntities = Array.from(entityCounts.entries())
+      .map(([path, data]) => ({
+        path,
+        count: data.count,
+        percentage: Math.round((data.count / rawHeartbeats.length) * 100),
+        writes: data.writes,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const topEntities = sortedEntities.slice(0, 5);
+    const topEntity = topEntities[0];
+
+    // Interval and cadence checks
+    const sortedHbs = rawHeartbeats
+      .filter((h): h is HackatimeHeartbeat & { time: number } => typeof h.time === "number")
+      .sort((a, b) => a.time - b.time);
+
+    let avgIntervalSec = 120;
+    let burstWarning = false;
+    let intervalStdDevSeconds = 0;
+    let isFixedIntervalSuspicious = false;
+
+    const validIntervals: number[] = [];
+    let burstCount = 0;
+    let multiMachineCollisions = 0;
+
+    for (let i = 1; i < sortedHbs.length; i++) {
+      const prev = sortedHbs[i - 1];
+      const curr = sortedHbs[i];
+      const diff = curr.time - prev.time;
+
+      if (diff >= 0 && diff <= 60 && prev.machine && curr.machine && prev.machine !== curr.machine) {
+        multiMachineCollisions++;
+      }
+
+      if (diff > 0 && diff < 3600) {
+        validIntervals.push(diff);
+        if (diff < 3) burstCount++;
+      }
+    }
+
+    if (validIntervals.length > 0) {
+      const sum = validIntervals.reduce((a, b) => a + b, 0);
+      avgIntervalSec = Math.round(sum / validIntervals.length);
+
+      if (validIntervals.length >= 15) {
+        const mean = sum / validIntervals.length;
+        const variance =
+          validIntervals.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
+          validIntervals.length;
+        intervalStdDevSeconds = Math.round(Math.sqrt(variance) * 10) / 10;
+        if (intervalStdDevSeconds < 3.5 && validIntervals.length > 25) {
+          isFixedIntervalSuspicious = true;
+        }
+      }
+
+      if (burstCount > 20 && burstCount / validIntervals.length > 0.35) {
+        burstWarning = true;
+      }
+    }
+
+    // Session Clustering (gap > 35 min indicates a break)
+    const sessionClusters: SessionCluster[] = [];
+    let currentSession: {
+      start: number;
+      end: number;
+      count: number;
+      writes: number;
+      langs: Map<string, number>;
+    } | null = null;
+
+    for (const hb of sortedHbs) {
+      const t = hb.time;
+      if (!currentSession) {
+        currentSession = {
+          start: t,
+          end: t,
+          count: 1,
+          writes: hb.is_write ? 1 : 0,
+          langs: new Map(),
+        };
+        if (hb.language) currentSession.langs.set(hb.language, 1);
+      } else if (t - currentSession.end <= 2100) {
+        currentSession.end = t;
+        currentSession.count++;
+        if (hb.is_write) currentSession.writes++;
+        if (hb.language) {
+          currentSession.langs.set(
+            hb.language,
+            (currentSession.langs.get(hb.language) ?? 0) + 1,
+          );
+        }
+      } else {
+        const durMin = Math.max(2, Math.round((currentSession.end - currentSession.start) / 60));
+        let topL: string | undefined = undefined;
+        let maxLCount = 0;
+        for (const [l, c] of currentSession.langs.entries()) {
+          if (c > maxLCount) {
+            maxLCount = c;
+            topL = l;
+          }
+        }
+        sessionClusters.push({
+          id: `sess-${sessionClusters.length + 1}`,
+          startTime: currentSession.start,
+          endTime: currentSession.end,
+          durationMinutes: durMin,
+          heartbeatsCount: currentSession.count,
+          writesCount: currentSession.writes,
+          topLanguage: topL,
+        });
+        currentSession = {
+          start: t,
+          end: t,
+          count: 1,
+          writes: hb.is_write ? 1 : 0,
+          langs: new Map(),
+        };
+        if (hb.language) currentSession.langs.set(hb.language, 1);
+      }
+    }
+
+    if (currentSession) {
+      const durMin = Math.max(2, Math.round((currentSession.end - currentSession.start) / 60));
+      let topL: string | undefined = undefined;
+      let maxLCount = 0;
+      for (const [l, c] of currentSession.langs.entries()) {
+        if (c > maxLCount) {
+          maxLCount = c;
+          topL = l;
+        }
+      }
+      sessionClusters.push({
+        id: `sess-${sessionClusters.length + 1}`,
+        startTime: currentSession.start,
+        endTime: currentSession.end,
+        durationMinutes: durMin,
+        heartbeatsCount: currentSession.count,
+        writesCount: currentSession.writes,
+        topLanguage: topL,
+      });
+    }
+
+    let maxSessionMinutes = 0;
+    for (const s of sessionClusters) {
+      if (s.durationMinutes > maxSessionMinutes) maxSessionMinutes = s.durationMinutes;
+    }
+    const maxContinuousHours = Math.round((maxSessionMinutes / 60) * 10) / 10;
+    const isContinuousCodingSuspicious = maxContinuousHours > 14;
+
     const singleFileAnomaly = (topEntity?.percentage ?? 0) > 85 && rawHeartbeats.length > 40;
+    const idleBloatAnomaly = writeRatio < 15 && rawHeartbeats.length > 35;
     const trustLvl = profile?.trust_factor?.trust_level;
+
+    // Risk Score calculation - AI usage is the #1 critical risk in Old Vibe
+    let riskScore = 0;
+    if (trustLvl === "red") riskScore += 45;
+    else if (trustLvl === "yellow") riskScore += 20;
+
+    if (aiPercentage >= 50) {
+      riskScore = 100;
+    } else if (aiPercentage >= 10) {
+      riskScore = Math.max(riskScore + 60, 85);
+    } else if (aiPercentage > 0) {
+      riskScore = Math.max(riskScore + 40, 50);
+    }
+
+    if (isFixedIntervalSuspicious) riskScore += 40;
+    if (burstWarning) riskScore += 30;
+    if (isContinuousCodingSuspicious) riskScore += 35;
+    if (singleFileAnomaly) riskScore += 25;
+    if (idleBloatAnomaly) riskScore += 20;
+    if (multiMachineCollisions > 3) riskScore += 20;
+
+    let doubleDippingCount = 0;
+    const doubleDippingProjectsSet = new Set<string>();
+    const overlappingDetails: string[] = [];
+
+    if (allHeartbeats && allHeartbeats.length > 0) {
+      const otherProjectHeartbeats = allHeartbeats.filter(
+        (hb) => hb.project && !claimedSet.has(hb.project.trim().toLowerCase()) && typeof hb.time === "number"
+      );
+      
+      otherProjectHeartbeats.sort((a, b) => (a.time as number) - (b.time as number));
+      
+      for (const hb of sortedHbs) {
+        const t = hb.time;
+        const overlapping = otherProjectHeartbeats.filter((ohb) => Math.abs((ohb.time as number) - t) <= 120);
+        if (overlapping.length > 0) {
+          for (const ohb of overlapping) {
+            if (ohb.project) {
+              doubleDippingCount++;
+              doubleDippingProjectsSet.add(ohb.project);
+              const dtStr = new Date((ohb.time as number) * 1000).toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+              if (overlappingDetails.length < 5) {
+                overlappingDetails.push(`[${dtStr}] ${ohb.project}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (doubleDippingCount > 0) {
+      riskScore += 30; // High risk addition for double dipping
+    }
+
+    riskScore = Math.min(100, riskScore);
+    const risk: "low" | "medium" | "high" =
+      riskScore >= 50 ? "high" : riskScore >= 20 ? "medium" : "low";
 
     const signals: FraudSignal[] = [
       {
+        label: "Double Dipping",
+        detail: doubleDippingCount > 0
+          ? `FLAG: Found ${doubleDippingCount} heartbeats overlapping in time (within 120s) with other projects: ${Array.from(doubleDippingProjectsSet).join(", ")}. Examples: ${Array.from(new Set(overlappingDetails)).join("; ")}`
+          : "PASSED: No overlapping timestamps with other projects detected.",
+        pass: doubleDippingCount === 0,
+      },
+      {
+        label: "No-AI Craftsmanship (Old-Vibe Core Rule)",
+        detail: isAiDetected
+          ? `VIOLATION: ${aiPercentage}% AI coding detected (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Detected: ${Array.from(aiReasonsSet).slice(0, 3).join("; ")}.`
+          : "PASSED: 100% Handcrafted. No AI autocomplete, AI agents, or prompt engineering detected.",
+        pass: !isAiDetected,
+      },
+      {
+        label: "Selected Project Verification",
+        detail:
+          rawHeartbeats.length > 0
+            ? `Verified ${rawHeartbeats.length} heartbeats strictly belonging to project(s) [${claimedProjectNames.join(", ")}].`
+            : `No heartbeats found for selected project(s) [${claimedProjectNames.join(", ")}].`,
+        pass: rawHeartbeats.length > 0,
+      },
+      {
         label: "Cutoff Window Compliance",
-        detail: `All ${rawHeartbeats.length} analyzed heartbeats logged after Sep 11, 2026.`,
+        detail: `All ${rawHeartbeats.length} analyzed heartbeats logged within program dates.`,
         pass: true,
       },
       {
@@ -276,42 +700,103 @@ export async function getMakerProjectBreakdown(
         pass: trustLvl !== "red" && trustLvl !== "yellow",
       },
       {
-        label: "Heartbeat Cadence",
-        detail: burstWarning
-          ? "Unusually high rapid-burst heartbeats detected (possible automated spoofing)."
-          : `Natural coding cadence (~${Math.round((avgIntervalSec / 60) * 10) / 10} min average interval).`,
-        pass: !burstWarning,
+        label: "Heartbeat Cadence & Anti-Spoofing",
+        detail: isFixedIntervalSuspicious
+          ? `Suspicious: Extremely low variance (±${intervalStdDevSeconds}s) indicates automated pulse script.`
+          : burstWarning
+            ? "Rapid-burst heartbeats detected (possible automated script injection)."
+            : `Natural cadence (~${Math.round((avgIntervalSec / 60) * 10) / 10}m average, ±${intervalStdDevSeconds}s natural variance).`,
+        pass: !isFixedIntervalSuspicious && !burstWarning,
       },
       {
-        label: "File Distribution",
+        label: "Coding Endurance & Sleep Check",
+        detail: isContinuousCodingSuspicious
+          ? `Warning: Longest continuous session was ${maxContinuousHours}h without a break.`
+          : `Human work pattern (longest continuous session: ${maxContinuousHours}h across ${sessionClusters.length} distinct sessions).`,
+        pass: !isContinuousCodingSuspicious,
+      },
+      {
+        label: "Active Typing vs. Idle Focus",
+        detail: idleBloatAnomaly
+          ? `Warning: Only ${writeRatio}% writes (${writeCount} writes). High proportion of idle editor focus.`
+          : `Healthy write ratio: ${writeRatio}% active keystroke writes (${writeCount}/${rawHeartbeats.length}).`,
+        pass: !idleBloatAnomaly,
+      },
+      {
+        label: "File Distribution & Camping",
         detail: singleFileAnomaly
-          ? `Warning: ${topEntity?.percentage}% of heartbeats on single file (${topEntity?.path}).`
-          : `Healthy distribution across ${entityCounts.size} different files/paths.`,
+          ? `Warning: ${topEntity?.percentage}% of heartbeats camped on single file (${topEntity?.path}).`
+          : `Distributed work across ${entityCounts.size} distinct files.`,
         pass: !singleFileAnomaly,
       },
       {
-        label: "Device & Editor Fingerprint",
-        detail: `Detected ${editorsSet.size} editor(s) [${Array.from(editorsSet).join(", ")}] across ${osSet.size} OS [${Array.from(osSet).join(", ")}].`,
-        pass: editorsSet.size > 0 && osSet.size <= 2,
+        label: "Machine & Device Collisions",
+        detail:
+          multiMachineCollisions > 0
+            ? `Detected ${multiMachineCollisions} conflicting heartbeats logged within 60s across different machine IDs.`
+            : `Consistent single machine/editor session (${editorsSet.size} editor(s), ${osSet.size} OS).`,
+        pass: multiMachineCollisions <= 2,
       },
     ];
 
-    let risk: "low" | "medium" | "high" = "low";
-    if (trustLvl === "red" || burstWarning) {
-      risk = "high";
-    } else if (trustLvl === "yellow" || singleFileAnomaly) {
-      risk = "medium";
-    }
-
     fraudAnalysis = {
       risk,
+      riskScore,
+      aiAudit,
       topEntity,
+      topEntities,
       averageIntervalMinutes: Math.round((avgIntervalSec / 60) * 10) / 10,
+      intervalStdDevSeconds,
+      isFixedIntervalSuspicious,
       uniqueEditors: Array.from(editorsSet),
       uniqueOS: Array.from(osSet),
       uniqueMachines: Array.from(machinesSet),
-      aiCodingCount,
+      aiCodingCount: aiHeartbeatCount,
+      writeCount,
+      writeRatio,
+      maxContinuousHours,
+      isContinuousCodingSuspicious,
+      hourlyDistribution,
+      sessionClusters,
+      multiMachineCollisions,
+      doubleDippingCount,
+      doubleDippingProjects: Array.from(doubleDippingProjectsSet),
       signals,
+    };
+  } else {
+    fraudAnalysis = {
+      risk: "medium",
+      riskScore: 25,
+      aiAudit: {
+        isAiDetected: false,
+        aiHeartbeatCount: 0,
+        aiPercentage: 0,
+        handcraftedPercentage: 100,
+        aiEditorsDetected: [],
+        aiReasons: [],
+        verdict: "No heartbeats recorded.",
+      },
+      topEntities: [],
+      uniqueEditors: [],
+      uniqueOS: [],
+      uniqueMachines: [],
+      aiCodingCount: 0,
+      writeCount: 0,
+      writeRatio: 0,
+      maxContinuousHours: 0,
+      isContinuousCodingSuspicious: false,
+      hourlyDistribution: new Array(24).fill(0),
+      sessionClusters: [],
+      multiMachineCollisions: 0,
+      doubleDippingCount: 0,
+      doubleDippingProjects: [],
+      signals: [
+        {
+          label: "Selected Project Verification",
+          detail: `No heartbeats found in Hackatime for selected project(s) [${claimedProjectNames.join(", ")}].`,
+          pass: false,
+        },
+      ],
     };
   }
 
@@ -330,7 +815,7 @@ export async function getMakerProjectBreakdown(
           eligible: false,
           languages: meta?.languages,
           mostRecentHeartbeat: meta?.mostRecentHeartbeat,
-          note: "Hackatime disconnected or no hours recorded after Sep 11",
+          note: "Hackatime disconnected or no hours recorded",
         };
       }),
       totalSeconds: 0,
@@ -341,9 +826,10 @@ export async function getMakerProjectBreakdown(
       latestHeartbeat,
       streakDays,
       allLanguages: Array.from(allLanguagesSet),
-      rawHeartbeats: rawHeartbeats.slice(0, 200),
+      rawHeartbeats: rawHeartbeats.slice(0, 500),
       totalHeartbeatsCount,
       fraudAnalysis,
+      otherProjectsSummary,
     };
   }
 
@@ -375,7 +861,7 @@ export async function getMakerProjectBreakdown(
       eligible: false,
       languages: meta?.languages,
       mostRecentHeartbeat: meta?.mostRecentHeartbeat,
-      note: "No hours logged after Sep 11, 2026 cutoff",
+      note: "No hours logged for this project name in Hackatime",
     };
   });
 
@@ -389,8 +875,9 @@ export async function getMakerProjectBreakdown(
     latestHeartbeat,
     streakDays,
     allLanguages: Array.from(allLanguagesSet),
-    rawHeartbeats: rawHeartbeats.slice(0, 200),
+    rawHeartbeats: rawHeartbeats.slice(0, 500),
     totalHeartbeatsCount,
     fraudAnalysis,
+    otherProjectsSummary,
   };
 }

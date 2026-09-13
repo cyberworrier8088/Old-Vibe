@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
-import { reconcileProjectBeans } from "@/lib/beans";
+import { reconcileProjectPaper } from "@/lib/paper";
 import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
 import type { Project } from "@/lib/db/schema";
@@ -47,7 +47,7 @@ export async function applyDecision(input: DecisionInput): Promise<ApplyResult> 
       .from(users)
       .where(eq(users.sub, updated.userSub))
       .limit(1);
-    await reconcileProjectBeans(updated, userRow?.streak ?? 0);
+    await reconcileProjectPaper(updated, userRow?.streak ?? 0);
     return { status: "applied", project: updated };
   }
 
@@ -79,7 +79,7 @@ export async function clearDecision(projectId: string): Promise<ClearResult> {
       .from(users)
       .where(eq(users.sub, updated.userSub))
       .limit(1);
-    await reconcileProjectBeans(updated, userRow?.streak ?? 0);
+    await reconcileProjectPaper(updated, userRow?.streak ?? 0);
     return { status: "cleared" };
   }
 
