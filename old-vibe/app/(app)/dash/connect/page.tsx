@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app/AppShell";
@@ -45,9 +44,7 @@ export default async function ConnectPage({
       title="hackatime"
       aside={
         <>
-          <div className={styles.iconBox}>
-            <HackatimeIcon size={32} />
-          </div>
+
           <p>keep building!</p>
         </>
       }

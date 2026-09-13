@@ -1,6 +1,5 @@
 import { desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app/AppShell";
@@ -15,7 +14,7 @@ import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { isOpen, projectStatus } from "@/lib/projects/status";
-import { balanceFor, beansForMinutes, hoursLabel } from "@/lib/beans";
+import { balanceFor, hoursLabel } from "@/lib/beans";
 import { PaperIcon } from "@/components/ui/PaperIcon";
 
 import styles from "./page.module.css";

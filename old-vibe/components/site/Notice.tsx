@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { SiteNav } from "@/components/site/SiteNav";
@@ -6,13 +5,11 @@ import { SiteNav } from "@/components/site/SiteNav";
 import styles from "./Notice.module.css";
 
 export function Notice({
-  owl = "owl1",
   title,
   children,
   actions,
   reference,
 }: {
-  owl?: "owl" | "owl1" | "owl2";
   title: ReactNode;
   children: ReactNode;
   actions?: ReactNode;
