@@ -1,0 +1,106 @@
+.ground {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0b0c10;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 119, 198, 0.25), transparent),
+    radial-gradient(circle 600px at 50% 100%, rgba(245, 166, 35, 0.08), transparent);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.center {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: var(--s7) var(--s4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s4);
+  width: 100%;
+  max-width: 460px;
+  padding: var(--s7);
+  text-align: center;
+  background: rgba(18, 20, 29, 0.85);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(245, 166, 35, 0.2);
+  border-radius: 16px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(245, 166, 35, 0.15);
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  color: #f5a623;
+  font-family: var(--data);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 999px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff;
+  margin: 0;
+}
+
+.highlight {
+  color: #f5a623;
+}
+
+.body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
+.slackNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #8ed0ff;
+  background: rgba(30, 80, 140, 0.2);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(142, 208, 255, 0.2);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.fine {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+}
+
+.full {
+  width: 100%;
+}
+
+.backLink {
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: color 0.15s;
+}
+
+.backLink:hover {
+  color: #fff;
+}

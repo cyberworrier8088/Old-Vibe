@@ -8,8 +8,14 @@ export function organizerSlackIds(): string[] {
 }
 
 export function isOrganizer(user: Pick<User, "slackId"> | null | undefined): boolean {
-  if (!user) return false;
-  return organizerSlackIds().includes(user.slackId.trim().toUpperCase());
+  if (!user || !user.slackId?.trim()) return false;
+  const list = organizerSlackIds();
+  // If specific organizer Slack IDs are provided, restrict to those (supports wildcard '*')
+  if (list.length > 0 && !list.includes("*")) {
+    return list.includes(user.slackId.trim().toUpperCase());
+  }
+  // Otherwise, all Slack-verified users have reviewer access
+  return true;
 }
 
 export async function requireOrganizer() {

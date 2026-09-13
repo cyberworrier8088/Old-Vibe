@@ -3,8 +3,11 @@ export async function register() {
 
   const { migrate } = await import("drizzle-orm/postgres-js/migrator");
   const { getDb } = await import("@/lib/db");
-
-  await migrate(getDb(), { migrationsFolder: "./drizzle" });
+  try {
+    await migrate(getDb(), { migrationsFolder: "./drizzle" });
+  } catch (error) {
+    console.warn("[migrate] notice during schema migration:", error);
+  }
 
   const { getReviewBackend, reviewConfigProblems } = await import("@/lib/review");
   console.info(`[review] backend is ${getReviewBackend().name}`);

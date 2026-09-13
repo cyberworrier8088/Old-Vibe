@@ -48,7 +48,7 @@ export default async function ShipsPage({
   const shown = rows.filter((row) => active.matches(projectStatus(row.project)));
 
   return (
-    <AppShell title="submissions">
+    <AppShell title="Superviewer • Submissions">
       <nav className={styles.filters} aria-label="filter submissions">
         {FILTERS.map((option) => (
           <Link
