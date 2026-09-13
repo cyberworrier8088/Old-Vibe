@@ -8,7 +8,6 @@ export const metadata: Metadata = { title: "signed out" };
 export default function GoodbyePage() {
   return (
     <Notice
-      owl="owl1"
       title="see you at 3am"
       actions={<ButtonLink href="/api/auth/login">sign back in</ButtonLink>}
     >

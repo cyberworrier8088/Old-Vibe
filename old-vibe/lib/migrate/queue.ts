@@ -3,7 +3,7 @@ import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
 import { getReviewBackend, type ReviewSubmission } from "@/lib/review";
-import { validateSubmission } from "@/lib/ari/payload";
+import { validateSubmission } from "@/lib/superviewer/payload";
 
 export type QueuedRow = {
   submission: ReviewSubmission;

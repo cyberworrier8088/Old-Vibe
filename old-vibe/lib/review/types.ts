@@ -20,8 +20,8 @@ export type SubmitOutcome =
 export type WithdrawOutcome =
   { status: "withdrawn" } | { status: "not_queued" } | { status: "unavailable"; message: string };
 
-export interface ReviewBackend {
-  readonly name: "local" | "ari";
-  submit(submission: ReviewSubmission): Promise<SubmitOutcome>;
-  withdraw(externalId: string): Promise<WithdrawOutcome>;
-}
+export type ReviewBackend = {
+  name: "local" | "ari" | "superviewer";
+  submit: (submission: ReviewSubmission) => Promise<SubmitOutcome>;
+  withdraw: (externalId: string) => Promise<WithdrawOutcome>;
+};

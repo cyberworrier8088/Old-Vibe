@@ -13,7 +13,7 @@ import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
 import { projects, projectJournals } from "@/lib/db/schema";
 import type { Project } from "@/lib/db/schema";
-import { livePhaseStatus } from "@/lib/ari/status";
+import { livePhaseStatus } from "@/lib/superviewer/status";
 import { missingForGrant } from "@/lib/grant";
 import { isOpen, projectStatus } from "@/lib/projects/status";
 import { getPickerProjects } from "@/lib/hackatime/projects";

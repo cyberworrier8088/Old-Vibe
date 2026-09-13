@@ -25,7 +25,6 @@ export default async function IneligiblePage({
 
   return (
     <Notice
-      owl="owl1"
       title="not this time"
       actions={
         <>

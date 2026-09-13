@@ -1,8 +1,8 @@
 import { and, eq, isNull, isNotNull, ne } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { validateSubmission } from "@/lib/ari/payload";
-import { repoHasReadme, repoIsReachable } from "@/lib/ari/repo";
+import { validateSubmission } from "@/lib/superviewer/payload";
+import { repoHasReadme, repoIsReachable } from "@/lib/superviewer/repo";
 import { canShip, checkEligibility } from "@/lib/auth/eligibility";
 import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";

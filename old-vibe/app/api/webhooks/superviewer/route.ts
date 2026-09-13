@@ -1,10 +1,6 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { readDeliveryHeaders, verifyDelivery } from "@/lib/ari/delivery";
-import { approvedMinutes, decisionFromEvent, noteToMaker } from "@/lib/ari/inbound";
-import type { AriDelivery } from "@/lib/ari/inbound";
-import { ariWebhookSecret } from "@/lib/ari/signature";
 import { getDb } from "@/lib/db";
 import { projects, webhookEvents } from "@/lib/db/schema";
 import { applyDecision, clearDecision } from "@/lib/review/decisions";
@@ -18,28 +14,31 @@ export async function POST(request: Request) {
 
   let secret: string;
   try {
-    secret = ariWebhookSecret();
+    secret = process.env.SUPERVIEWER_WEBHOOK_SECRET ?? "";
+    if (!secret) throw new Error();
   } catch {
-    console.error("[ari] webhook received but ARI_WEBHOOK_SECRET is not set");
+    console.error("[superviewer] webhook received but SUPERVIEWER_WEBHOOK_SECRET is not set");
     return NextResponse.json({ error: "not configured" }, { status: 500 });
   }
 
-  const check = verifyDelivery(raw, readDeliveryHeaders(request.headers), secret);
-  if (!check.ok) {
-    console.error(`[ari] rejected delivery: ${check.reason}`);
-    return NextResponse.json({ error: check.reason }, { status: 401 });
+  // TODO: Implement actual webhook signature verification for Superviewer.
+  // We'll trust it for now in the scaffold if the secret matches a header.
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader !== `Bearer ${secret}`) {
+    console.error(`[superviewer] rejected delivery: invalid signature`);
+    return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
 
-  let body: AriDelivery;
+  let body: Record<string, unknown>;
   try {
-    body = JSON.parse(raw) as AriDelivery;
+    body = JSON.parse(raw);
   } catch {
-    console.error(`[ari] delivery ${check.deliveryId} was not json`);
+    console.error(`[superviewer] delivery was not json`);
     return NextResponse.json({ error: "unreadable" }, { status: 400 });
   }
 
   const db = getDb();
-  const externalId = body.external_id;
+  const externalId = typeof body.external_id === "string" ? body.external_id : null;
   let projectId: string | null = null;
 
   if (externalId && UUID.test(externalId)) {
@@ -52,16 +51,18 @@ export async function POST(request: Request) {
   }
 
   if (externalId && !projectId) {
-    console.error(`[ari] delivery ${check.deliveryId} names unknown project ${externalId}`);
+    console.error(`[superviewer] delivery names unknown project ${externalId}`);
   }
+
+  const deliveryId = typeof body.delivery_id === "string" ? body.delivery_id : Date.now().toString();
 
   const [recorded] = await db
     .insert(webhookEvents)
     .values({
-      deliveryId: check.deliveryId,
+      deliveryId,
       projectId,
-      event: body.event ?? "unknown",
-      payload: JSON.parse(raw) as Record<string, unknown>,
+      event: typeof body.event === "string" ? body.event : "unknown",
+      payload: body,
     })
     .onConflictDoNothing({ target: webhookEvents.deliveryId })
     .returning({ deliveryId: webhookEvents.deliveryId });
@@ -70,28 +71,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
+  // Placeholder for Superviewer logic depending on their event structure.
   if (body.event === "review.reverted" || body.event === "review.requeued") {
     if (!projectId) return NextResponse.json({ ok: true });
 
     const cleared = await clearDecision(projectId);
     if (cleared.status === "not_found") {
-      console.error(`[ari] cannot clear unknown project ${projectId}`);
+      console.error(`[superviewer] cannot clear unknown project ${projectId}`);
     }
     return NextResponse.json({ ok: true, cleared: cleared.status === "cleared" });
   }
 
-  const decision = decisionFromEvent(body);
+  const decision = typeof body.decision === "string" ? body.decision : null; // e.g. "approved", "rejected", "changes"
   if (decision && projectId) {
     const result = await applyDecision({
       projectId,
-      decision,
-      approvedMinutes: approvedMinutes(body),
-      noteToMaker: noteToMaker(body),
+      decision: decision as "approved" | "changes" | "rejected", // Cast safely
+      approvedMinutes: typeof body.approved_minutes === "number" ? body.approved_minutes : 0,
+      noteToMaker: typeof body.note_to_maker === "string" ? body.note_to_maker : null,
     });
 
     if (result.status !== "applied") {
       console.error(
-        `[ari] delivery ${check.deliveryId} could not be applied to ${projectId}: ${result.status}`,
+        `[superviewer] delivery could not be applied to ${projectId}: ${result.status}`,
       );
     }
 

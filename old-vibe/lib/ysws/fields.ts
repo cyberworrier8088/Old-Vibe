@@ -1,4 +1,4 @@
-import { githubSlug } from "@/lib/ari/repo";
+import { githubSlug } from "@/lib/superviewer/repo";
 
 import type { PendingRow } from "./types";
 

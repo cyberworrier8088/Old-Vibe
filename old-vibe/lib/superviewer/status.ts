@@ -1,6 +1,6 @@
 import type { ProjectStatus } from "@/lib/status";
 
-import { ariBaseUrl, ariIngestSecret, ariProgramId } from "./signature";
+import { superviewerBaseUrl, superviewerProgramId } from "@/lib/review/superviewer";
 
 export type AriPhase =
   | "processing"
@@ -42,11 +42,11 @@ export async function fetchAriStatus(externalId: string): Promise<AriStatus | nu
 
   let status: AriStatus | null = null;
   try {
-    const url = new URL(`${ariBaseUrl()}/api/ingest/${ariProgramId()}/status`);
+    const url = new URL(`${superviewerBaseUrl()}/api/ingest/${superviewerProgramId()}/status`);
     url.searchParams.set("external_id", externalId);
 
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${ariIngestSecret()}` },
+      headers: { Authorization: `Bearer ${process.env.SUPERVIEWER_INGEST_SECRET ?? ""}` },
       cache: "no-store",
     });
 

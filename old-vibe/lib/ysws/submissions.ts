@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 
-import { repoCommitCount } from "@/lib/ari/repo";
+import { repoCommitCount } from "@/lib/superviewer/repo";
 import { getDb } from "@/lib/db";
 import { projects, users, yswsSubmissions } from "@/lib/db/schema";
 import { missingForGrant } from "@/lib/grant";

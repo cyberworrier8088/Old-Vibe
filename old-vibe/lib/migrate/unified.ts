@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { githubSlug } from "@/lib/ari/repo";
+import { githubSlug } from "@/lib/superviewer/repo";
 import { getDb } from "@/lib/db";
 import { projects, users, yswsSubmissions } from "@/lib/db/schema";
 import type { UnifiedState } from "@/lib/ysws/types";

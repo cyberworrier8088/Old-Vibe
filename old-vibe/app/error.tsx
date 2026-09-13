@@ -12,7 +12,6 @@ export default function ErrorPage({
 }) {
   return (
     <Notice
-      owl="owl2"
       title="that broke"
       reference={error.digest ? `reference ${error.digest}` : undefined}
       actions={

@@ -19,7 +19,6 @@ export default async function VerifyPage() {
   if (result === "verified_eligible") {
     return (
       <Notice
-        owl="owl"
         title="you are all set"
         actions={<ButtonLink href="/dash">go to your dashboard</ButtonLink>}
       >
@@ -35,7 +34,6 @@ export default async function VerifyPage() {
 
   return (
     <Notice
-      owl="owl"
       title="one thing first"
       actions={
         <>
