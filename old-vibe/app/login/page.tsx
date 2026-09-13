@@ -40,15 +40,7 @@ export default async function LoginPage({
       <SiteNav />
       <div className={styles.center}>
         <div className={styles.card}>
-          <Image
-            src="/assets/owl.png"
-            alt=""
-            width={60}
-            height={60}
-            className="pixel"
-            unoptimized
-          />
-          <h1 className={styles.title}>let us in, night owl</h1>
+          <h1 className={styles.head}>Login to Old Vibe</h1>
           <p className={styles.body}>
             You sign in with your Hack Club account. It is how we know your hours are yours, and
             where to send your paper.

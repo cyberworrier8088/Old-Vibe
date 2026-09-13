@@ -29,7 +29,7 @@ export async function AppShell({
       <div className={styles.shell}>
         <aside className={styles.side}>
           <a href="https://hackclub.com/">
-            <img style={{ position: "absolute", top: 0, left: 10, border: 0, width: 256, zIndex: 999 }} src="https://assets.hackclub.com/flag-orpheus-top.svg" alt="Hack Club" />
+            <img style={{ position: "absolute", top: 0, left: 10, border: 0, width: 128, zIndex: 999 }} src="https://assets.hackclub.com/flag-orpheus-top.svg" alt="Hack Club" />
           </a>
           <Link href="/dash" className={styles.brand}>
             <OldManFace size={26} />

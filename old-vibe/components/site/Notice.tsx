@@ -23,14 +23,6 @@ export function Notice({
       <SiteNav />
       <div className={styles.center}>
         <div className={styles.card}>
-          <Image
-            src={`/assets/${owl}.png`}
-            alt=""
-            width={60}
-            height={60}
-            className="pixel"
-            unoptimized
-          />
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.body}>{children}</p>
           {actions ? <div className={styles.actions}>{actions}</div> : null}

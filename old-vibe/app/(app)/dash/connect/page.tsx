@@ -45,14 +45,9 @@ export default async function ConnectPage({
       title="hackatime"
       aside={
         <>
-          <Image
-            src="/assets/owl.png"
-            alt=""
-            width={44}
-            height={44}
-            className="pixel"
-            unoptimized
-          />
+          <div className={styles.iconBox}>
+            <HackatimeIcon size={32} />
+          </div>
           <p>keep building!</p>
         </>
       }

@@ -38,9 +38,7 @@ export default async function DashboardPage() {
     balanceFor(user.sub)
   ]);
 
-  const owl = (
-    <Image src="/assets/owl.png" alt="" width={64} height={64} className="pixel" unoptimized />
-  );
+  const owl = null;
 
   if (mine.length === 0) {
     return (
