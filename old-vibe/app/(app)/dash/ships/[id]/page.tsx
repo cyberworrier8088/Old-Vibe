@@ -17,6 +17,8 @@ import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects"
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { DecisionForm } from "./DecisionForm";
+import { FraudInspector } from "./FraudInspector";
+import { ReadmeViewer } from "./ReadmeViewer";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Superviewer • Review" };
@@ -81,6 +83,22 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             ? styles.trustRed
             : "";
 
+  // Check if there is an alternate repo matching the Hackatime project
+  const ghUser =
+    audit.profile?.github_username ||
+    (project.repoUrl ? project.repoUrl.match(/github\.com\/([^/]+)/)?.[1] : null);
+  const primaryHackatimeProject = project.hackatimeProjects[0];
+  let alternateRepoUrl: string | null = null;
+  if (ghUser && primaryHackatimeProject) {
+    const candidate = `https://github.com/${ghUser}/${primaryHackatimeProject}`;
+    if (
+      project.repoUrl &&
+      candidate.toLowerCase() !== project.repoUrl.replace(/\.git$/i, "").toLowerCase()
+    ) {
+      alternateRepoUrl = candidate;
+    }
+  }
+
   return (
     <AppShell title={`Superviewer • ${project.title}`}>
       <div className={styles.split}>
@@ -117,7 +135,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
                 <span>trust factor</span>
                 <span>
                   <span className={`${styles.trustBadge} ${trustBadgeClass}`}>
-                    🛡️ {trustLevel} (score: {audit.profile.trust_factor.trust_value ?? 0})
+                    [TRUST: {trustLevel.toUpperCase()} (score: {audit.profile.trust_factor.trust_value ?? 0})]
                   </span>
                 </span>
               </div>
@@ -140,7 +158,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             {audit.streakDays != null && audit.streakDays > 0 ? (
               <div className={styles.fact}>
                 <span>coding streak</span>
-                <span>🔥 {audit.streakDays} days in a row</span>
+                <span>STREAK: {audit.streakDays} days in a row</span>
               </div>
             ) : null}
             <div className={styles.fact}>
@@ -168,13 +186,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <div className={styles.auditCard}>
               <div className={styles.auditHeader}>
                 <div className={styles.auditTitle}>
-                  <span>⚡</span>
-                  <span>Hackatime Audit</span>
+                  <span>[HACKATIME AUDIT]</span>
                 </div>
                 <div className={styles.auditTotal}>{totalHoursDecimal}h ({totalHoursFormatted})</div>
               </div>
               <div className={styles.cutoffNotice}>
-                📅 Cutoff Rule: Hours logged before <strong>11 Sep 2026</strong> are automatically excluded.
+                CUTOFF RULE: Work logged prior to <strong>11 Sep 2026</strong> is excluded.
               </div>
 
               {audit.allLanguages && audit.allLanguages.length > 0 ? (
@@ -194,7 +211,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               {audit.latestHeartbeat ? (
                 <div className={styles.heartbeatBox}>
                   <div className={styles.heartbeatRow}>
-                    <span style={{ color: "#f5a623", fontWeight: 600 }}>💓 Latest Heartbeat</span>
+                    <span style={{ color: "#f5a623", fontWeight: 600 }}>[LATEST HEARTBEAT]</span>
                     <span style={{ color: "var(--soft)" }}>{audit.latestHeartbeat.project}</span>
                   </div>
                   {audit.latestHeartbeat.entity ? (
@@ -233,6 +250,15 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             </div>
           ) : null}
 
+          {/* Powerful Internal Fraud Inspector with Download & Raw Stream */}
+          <FraudInspector
+            projectId={project.id}
+            heartbeats={audit.rawHeartbeats}
+            totalHeartbeatsCount={audit.totalHeartbeatsCount}
+            fraudAnalysis={audit.fraudAnalysis}
+            claimedProjects={project.hackatimeProjects}
+          />
+
           <div className={styles.choices} style={{ marginTop: 16 }}>
             {project.repoUrl ? (
               <ButtonLink href={project.repoUrl} variant="quiet" target="_blank" rel="noreferrer">
@@ -246,16 +272,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             ) : null}
           </div>
 
-          {/* Embedded README reader */}
-          {readme ? (
-            <div className={styles.readmeContainer}>
-              <div className={styles.readmeTitle}>
-                <span>📖 Project README & Code Docs</span>
-                <span style={{ fontSize: 11, fontFamily: "var(--data)" }}>GitHub</span>
-              </div>
-              <pre className={styles.readmeContent}>{readme}</pre>
-            </div>
-          ) : null}
+          {/* High-Contrast Formatted README & Code Viewer */}
+          <ReadmeViewer
+            initialReadme={readme}
+            repoUrl={project.repoUrl}
+            alternateRepoUrl={alternateRepoUrl}
+            projectId={project.id}
+          />
 
           {journals.length > 0 ? (
             <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--rule)" }}>

@@ -35,6 +35,8 @@ export type HackatimeHeartbeat = {
   operating_system?: string;
   machine?: string;
   entity?: string;
+  is_write?: boolean;
+  lines?: number;
 };
 
 function base(): string {
@@ -151,4 +153,29 @@ export function getHackatimeProjectsFiltered(
     params.start_date = options.startDate;
   }
   return get<{ projects: HackatimeProject[] }>(token, "/api/v1/authenticated/projects", params);
+}
+
+export async function getHackatimeHeartbeats(
+  token: string,
+  startTime?: string,
+  endTime?: string,
+): Promise<{ heartbeats: HackatimeHeartbeat[]; total_seconds?: number }> {
+  const params: Record<string, string> = {};
+  if (startTime) params.start_time = startTime;
+  if (endTime) params.end_time = endTime;
+
+  try {
+    const data = await get<{
+      heartbeats?: HackatimeHeartbeat[];
+      total_seconds?: number;
+    }>(token, "/api/v1/my/heartbeats", params);
+
+    return {
+      heartbeats: Array.isArray(data?.heartbeats) ? data.heartbeats : [],
+      total_seconds: data?.total_seconds,
+    };
+  } catch (err) {
+    console.warn("[hackatime] getHackatimeHeartbeats failed:", err);
+    return { heartbeats: [] };
+  }
 }

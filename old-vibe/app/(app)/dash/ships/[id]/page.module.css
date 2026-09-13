@@ -272,35 +272,560 @@
   color: var(--soft);
 }
 
+/* High Contrast README Viewer */
 .readmeContainer {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.readmeTitle {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  margin-bottom: 12px;
+.readmeTopBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.readmeHeaderLeft {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.readmeContent {
-  background: rgba(10, 12, 18, 0.8);
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  padding: 14px;
-  max-height: 380px;
-  overflow-y: auto;
+.readmeSectionTitle {
+  font-size: 12px;
+  font-family: var(--data);
+  letter-spacing: 0.5px;
+  color: var(--lamp);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.readmeRepoLink {
   font-family: var(--data);
   font-size: 12px;
+  color: var(--cream);
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.readmeControls {
+  display: flex;
+  gap: 6px;
+}
+
+.readmeBtn {
+  background: var(--night);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  font-family: var(--data);
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.readmeBtn:hover {
+  color: #fff;
+  border-color: var(--rule);
+}
+
+.readmeBtnActive {
+  background: rgba(247, 233, 168, 0.12);
+  border-color: var(--lamp);
+  color: var(--lamp);
+}
+
+.repoMismatchNotice {
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.repoMismatchText {
+  font-size: 12.5px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #f7e9a8;
+}
+
+.repoMismatchActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtnSmall {
+  background: var(--night);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  font-family: var(--data);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actionBtnSmall:hover {
+  color: #fff;
+  border-color: var(--lamp);
+}
+
+.actionBtnSmallHighlight {
+  background: #f5a623;
+  border: 1px solid #f5a623;
+  color: #12151d;
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actionBtnSmallHighlight:hover {
+  background: #ffb83d;
+}
+
+.readmeCard {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 20px;
+  max-height: 440px;
+  overflow-y: auto;
+  transition: max-height 0.2s ease;
+}
+
+.readmeExpanded {
+  max-height: 850px;
+}
+
+.readmeFormatted {
+  color: #e6edf3;
+  font-size: 14px;
+  line-height: 1.65;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+.readmeH1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 6px;
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.readmeH2 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #f0f6fc;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 4px;
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.readmeH3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.readmeP {
+  color: #c9d1d9;
+  margin: 6px 0;
+  font-size: 13.5px;
+}
+
+.readmeLi {
+  color: #c9d1d9;
+  margin-left: 18px;
+  margin-bottom: 4px;
+  font-size: 13.5px;
+}
+
+.readmeCodeBlock {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  font-family: var(--data);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #58a6ff;
+  margin: 10px 0;
+}
+
+.readmeRaw {
+  font-family: var(--data);
+  font-size: 12.5px;
   line-height: 1.6;
   white-space: pre-wrap;
-  color: var(--soft);
+  color: #e6edf3;
+  margin: 0;
+}
+
+.readmeEmptyState {
+  color: #8b949e;
+  font-family: var(--data);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+/* Internal Fraud Inspector */
+.fraudSection {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fraudHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fraudTitleBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fraudTitleTag {
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f5a623;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.riskBadge {
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.riskLow {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.35);
+}
+
+.riskMedium {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.35);
+}
+
+.riskHigh {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.45);
+}
+
+.downloadTools {
+  display: flex;
+  gap: 8px;
+}
+
+.downloadBtn {
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--edge);
+  color: var(--cream);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.downloadBtn:hover {
+  background: rgba(245, 166, 35, 0.15);
+  border-color: #f5a623;
+  color: #fff;
+}
+
+.signalsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.signalCard {
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.signalPass {
+  border: 1px solid rgba(46, 204, 113, 0.25);
+}
+
+.signalFail {
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.signalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.signalLabel {
+  font-size: 11.5px;
+  font-family: var(--data);
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.signalStatus {
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.signalPass .signalStatus {
+  color: #2ecc71;
+}
+
+.signalFail .signalStatus {
+  color: #e74c3c;
+}
+
+.signalDetail {
+  font-size: 12.5px;
+  color: #e6edf3;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Raw Heartbeats Stream Table */
+.heartbeatsCard {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heartbeatsCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.streamTitle {
+  font-size: 12px;
+  font-family: var(--data);
+  color: #f5a623;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.streamCount {
+  color: #8b949e;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.streamControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.streamSearch {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #e6edf3;
+  font-family: var(--data);
+  font-size: 11.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: 180px;
+}
+
+.streamFilterSelect {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #e6edf3;
+  font-family: var(--data);
+  font-size: 11.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.heartbeatTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.heartbeatTable th {
+  padding: 6px 10px;
+  font-family: var(--data);
+  font-size: 10.5px;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #30363d;
+  position: sticky;
+  top: 0;
+  background: #0d1117;
+  z-index: 1;
+}
+
+.heartbeatTable td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #21262d;
+  font-family: var(--data);
+  color: #c9d1d9;
+}
+
+.tdTime {
+  white-space: nowrap;
+  color: #8b949e;
+  font-size: 11px;
+}
+
+.tdProject {
+  color: #58a6ff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tdEntity {
+  max-width: 220px;
+}
+
+.filenameText {
+  display: block;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.entityPathText {
+  display: block;
+  font-size: 10.5px;
+  color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdLang {
+  color: #e6edf3;
+  white-space: nowrap;
+}
+
+.tdEditor {
+  white-space: nowrap;
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.categoryTag {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #c9d1d9;
+}
+
+.categoryAi {
+  background: rgba(187, 134, 252, 0.2);
+  color: #bb86fc;
+  border: 1px solid rgba(187, 134, 252, 0.4);
+}
+
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #21262d;
+}
+
+.pageBtn {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  font-family: var(--data);
+  font-size: 11.5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: #8b949e;
+}
+
+.emptyStream {
+  padding: 20px;
+  text-align: center;
+  color: #8b949e;
+  font-family: var(--data);
+  font-size: 12px;
 }
 
 @media (max-width: 860px) {

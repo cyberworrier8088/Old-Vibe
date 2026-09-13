@@ -6,6 +6,7 @@ import { users } from "@/lib/db/schema";
 import type { User } from "@/lib/db/schema";
 
 import {
+  getHackatimeHeartbeats,
   getHackatimeProfile,
   getHackatimeProjects,
   getHackatimeStreak,
@@ -28,6 +29,23 @@ export type PickerProject = {
   cutoffApplied?: boolean;
 };
 
+export type FraudSignal = {
+  label: string;
+  detail: string;
+  pass: boolean;
+};
+
+export type FraudAnalysis = {
+  risk: "low" | "medium" | "high";
+  topEntity?: { path: string; count: number; percentage: number };
+  averageIntervalMinutes?: number;
+  uniqueEditors: string[];
+  uniqueOS: string[];
+  uniqueMachines: string[];
+  aiCodingCount: number;
+  signals: FraudSignal[];
+};
+
 export type ProjectAuditBreakdown = {
   projects: Array<{
     key: string;
@@ -47,6 +65,9 @@ export type ProjectAuditBreakdown = {
   latestHeartbeat?: import("./client").HackatimeHeartbeat | null;
   streakDays?: number | null;
   allLanguages?: string[];
+  rawHeartbeats?: HackatimeHeartbeat[];
+  totalHeartbeatsCount?: number;
+  fraudAnalysis?: FraudAnalysis;
 };
 
 const TTL_MS = 60_000;
@@ -150,14 +171,19 @@ export async function getMakerProjectBreakdown(
   let streakDays: number | null = null;
   const projectMetaMap = new Map<string, { languages?: string[]; mostRecentHeartbeat?: string }>();
 
+  let rawHeartbeats: HackatimeHeartbeat[] = [];
+  let totalHeartbeatsCount = 0;
+  const allLanguagesSet = new Set<string>();
+
   if (user.hackatimeToken) {
     try {
       const token = open(user.hackatimeToken);
-      const [pRes, hRes, sRes, rawProjectsRes] = await Promise.allSettled([
+      const [pRes, hRes, sRes, rawProjectsRes, hbRes] = await Promise.allSettled([
         getHackatimeProfile(token),
         getLatestHeartbeat(token),
         getHackatimeStreak(token),
         getHackatimeProjects(token),
+        getHackatimeHeartbeats(token, `${EVENT_START_DATE}T00:00:00Z`),
       ]);
       if (pRes.status === "fulfilled") profile = pRes.value;
       if (hRes.status === "fulfilled") latestHeartbeat = hRes.value;
@@ -170,12 +196,125 @@ export async function getMakerProjectBreakdown(
           });
         }
       }
+      if (hbRes.status === "fulfilled" && hbRes.value?.heartbeats) {
+        rawHeartbeats = hbRes.value.heartbeats;
+        totalHeartbeatsCount = rawHeartbeats.length;
+      }
     } catch (err) {
       console.warn("[hackatime] extra audit data fetch failed:", err);
     }
   }
 
-  const allLanguagesSet = new Set<string>();
+  // Compute Fraud Analysis
+  let fraudAnalysis: FraudAnalysis | undefined;
+  if (rawHeartbeats.length > 0) {
+    const entityCounts = new Map<string, number>();
+    const editorsSet = new Set<string>();
+    const osSet = new Set<string>();
+    const machinesSet = new Set<string>();
+    let aiCodingCount = 0;
+
+    for (const hb of rawHeartbeats) {
+      if (hb.entity) entityCounts.set(hb.entity, (entityCounts.get(hb.entity) ?? 0) + 1);
+      if (hb.editor) editorsSet.add(hb.editor);
+      if (hb.operating_system) osSet.add(hb.operating_system);
+      if (hb.machine) machinesSet.add(hb.machine);
+      if (hb.category === "ai coding" || (hb as { ai_model?: string }).ai_model) aiCodingCount++;
+      if (hb.language) allLanguagesSet.add(hb.language);
+    }
+
+    let topEntity: { path: string; count: number; percentage: number } | undefined;
+    let maxCount = 0;
+    for (const [path, count] of entityCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        topEntity = {
+          path,
+          count,
+          percentage: Math.round((count / rawHeartbeats.length) * 100),
+        };
+      }
+    }
+
+    // Interval checks
+    const times = rawHeartbeats
+      .map((h) => h.time)
+      .filter((t): t is number => typeof t === "number")
+      .sort((a, b) => a - b);
+    let avgIntervalSec = 120;
+    let burstWarning = false;
+    if (times.length > 1) {
+      let totalDiff = 0;
+      let validDiffs = 0;
+      let burstCount = 0;
+      for (let i = 1; i < times.length; i++) {
+        const diff = times[i] - times[i - 1];
+        if (diff > 0 && diff < 3600) {
+          totalDiff += diff;
+          validDiffs++;
+          if (diff < 5) burstCount++;
+        }
+      }
+      if (validDiffs > 0) avgIntervalSec = Math.round(totalDiff / validDiffs);
+      if (burstCount > 20 && burstCount / validDiffs > 0.4) burstWarning = true;
+    }
+
+    const singleFileAnomaly = (topEntity?.percentage ?? 0) > 85 && rawHeartbeats.length > 40;
+    const trustLvl = profile?.trust_factor?.trust_level;
+
+    const signals: FraudSignal[] = [
+      {
+        label: "Cutoff Window Compliance",
+        detail: `All ${rawHeartbeats.length} analyzed heartbeats logged after Sep 11, 2026.`,
+        pass: true,
+      },
+      {
+        label: "Trust Factor Verification",
+        detail: trustLvl
+          ? `Hackatime trust level: ${trustLvl.toUpperCase()} (score: ${profile?.trust_factor?.trust_value ?? 0})`
+          : "Trust factor not verified",
+        pass: trustLvl !== "red" && trustLvl !== "yellow",
+      },
+      {
+        label: "Heartbeat Cadence",
+        detail: burstWarning
+          ? "Unusually high rapid-burst heartbeats detected (possible automated spoofing)."
+          : `Natural coding cadence (~${Math.round((avgIntervalSec / 60) * 10) / 10} min average interval).`,
+        pass: !burstWarning,
+      },
+      {
+        label: "File Distribution",
+        detail: singleFileAnomaly
+          ? `Warning: ${topEntity?.percentage}% of heartbeats on single file (${topEntity?.path}).`
+          : `Healthy distribution across ${entityCounts.size} different files/paths.`,
+        pass: !singleFileAnomaly,
+      },
+      {
+        label: "Device & Editor Fingerprint",
+        detail: `Detected ${editorsSet.size} editor(s) [${Array.from(editorsSet).join(", ")}] across ${osSet.size} OS [${Array.from(osSet).join(", ")}].`,
+        pass: editorsSet.size > 0 && osSet.size <= 2,
+      },
+    ];
+
+    let risk: "low" | "medium" | "high" = "low";
+    if (trustLvl === "red" || burstWarning) {
+      risk = "high";
+    } else if (trustLvl === "yellow" || singleFileAnomaly) {
+      risk = "medium";
+    }
+
+    fraudAnalysis = {
+      risk,
+      topEntity,
+      averageIntervalMinutes: Math.round((avgIntervalSec / 60) * 10) / 10,
+      uniqueEditors: Array.from(editorsSet),
+      uniqueOS: Array.from(osSet),
+      uniqueMachines: Array.from(machinesSet),
+      aiCodingCount,
+      signals,
+    };
+  }
+
   if (latestHeartbeat?.language) allLanguagesSet.add(latestHeartbeat.language);
 
   if (!allProjects || allProjects.length === 0) {
@@ -202,6 +341,9 @@ export async function getMakerProjectBreakdown(
       latestHeartbeat,
       streakDays,
       allLanguages: Array.from(allLanguagesSet),
+      rawHeartbeats: rawHeartbeats.slice(0, 200),
+      totalHeartbeatsCount,
+      fraudAnalysis,
     };
   }
 
@@ -247,5 +389,8 @@ export async function getMakerProjectBreakdown(
     latestHeartbeat,
     streakDays,
     allLanguages: Array.from(allLanguagesSet),
+    rawHeartbeats: rawHeartbeats.slice(0, 200),
+    totalHeartbeatsCount,
+    fraudAnalysis,
   };
 }

@@ -120,7 +120,7 @@ export function DecisionForm({
                 className={styles.quickBtn}
                 onClick={() => setHours(String(defaultHours))}
               >
-                ⚡ Full: {defaultHours}h
+                Full: {defaultHours}h
               </button>
               <button
                 type="button"

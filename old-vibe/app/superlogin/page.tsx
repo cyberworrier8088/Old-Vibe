@@ -37,8 +37,8 @@ export default async function SuperLoginPage({
       <div className={styles.center}>
         <div className={styles.card}>
           <div className={styles.badge}>
-            <span>⚡</span>
-            <span>Superviewer Console</span>
+            <span>[SUPERVIEWER]</span>
+            <span>Console</span>
           </div>
 
           <h1 className={styles.title}>
@@ -51,7 +51,7 @@ export default async function SuperLoginPage({
           </p>
 
           <div className={styles.slackNotice}>
-            <span>🔒</span>
+            <span>[SLACK ONLY]</span>
             <span>
               <strong>Slack Users Only:</strong> Access is restricted to Hack Club Slack members.
             </span>
