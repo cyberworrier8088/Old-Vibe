@@ -53,6 +53,7 @@ export const projects = pgTable(
     demoUrl: text("demo_url"),
     thumbnailUrl: text("thumbnail_url"),
     hackatimeProjects: text("hackatime_projects").array().notNull().default([]),
+    trackedSeconds: integer("tracked_seconds").notNull().default(0),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),

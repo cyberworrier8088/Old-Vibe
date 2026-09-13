@@ -97,9 +97,17 @@ export default async function ShipsPage({
                     </td>
                     <td>{project.submittedAt ? WHEN.format(project.submittedAt) : ""}</td>
                     <td>
-                      {project.approvedMinutes == null
-                        ? "—"
-                        : `${hoursLabel(project.approvedMinutes)}h`}
+                      {project.approvedMinutes != null ? (
+                        <span style={{ color: "var(--ok)", fontWeight: 600 }}>
+                          {hoursLabel(project.approvedMinutes)}h
+                        </span>
+                      ) : project.trackedSeconds > 0 ? (
+                        <span style={{ color: "var(--cream)", opacity: 0.9 }}>
+                          {Math.round((project.trackedSeconds / 3600) * 10) / 10}h tracked
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td>
                       <ProjectStatusWord status={projectStatus(project)} size="s" />

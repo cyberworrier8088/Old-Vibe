@@ -63,6 +63,139 @@
   background: rgba(247, 233, 168, 0.08);
 }
 
+.auditCard {
+  background: rgba(245, 166, 35, 0.05);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auditHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auditTitle {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #f5a623;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auditTotal {
+  font-family: var(--data);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(245, 166, 35, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.cutoffNotice {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.auditList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
+.auditItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auditItemName {
+  font-family: var(--data);
+  color: var(--soft);
+}
+
+.auditItemHours {
+  font-family: var(--data);
+  font-weight: 600;
+  color: #f5a623;
+}
+
+.quickHours {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.quickBtn {
+  font-family: var(--data);
+  font-size: 11.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quickBtn:hover {
+  background: rgba(245, 166, 35, 0.15);
+  border-color: #f5a623;
+  color: #fff;
+}
+
+.presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.presetLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.presetChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.presetChip {
+  font-size: 11.5px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.presetChip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: var(--lamp);
+}
+
 @media (max-width: 860px) {
   .split {
     grid-template-columns: 1fr;

@@ -131,6 +131,7 @@ export async function POST(request: Request) {
     demoUrl: body.demoUrl?.trim() ?? null,
     thumbnailUrl: body.thumbnailUrl?.trim() ?? null,
     hackatimeProjects: body.hackatimeProjects ?? [],
+    trackedSeconds: totalSeconds,
   };
 
   let row;

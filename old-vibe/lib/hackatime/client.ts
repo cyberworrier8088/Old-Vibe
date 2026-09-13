@@ -68,3 +68,19 @@ export function getHackatimeProfile(token: string): Promise<HackatimeProfile> {
 export function getHackatimeProjects(token: string): Promise<{ projects: HackatimeProject[] }> {
   return get<{ projects: HackatimeProject[] }>(token, "/api/v1/authenticated/projects");
 }
+
+export type HackatimeSummaryProject = { name: string; total_seconds: number };
+export type HackatimeSummaryDay = {
+  range?: { start?: string; end?: string; date?: string };
+  projects?: HackatimeSummaryProject[];
+};
+
+export function getHackatimeSummaries(
+  token: string,
+  start: string,
+  end?: string,
+): Promise<{ data: HackatimeSummaryDay[] }> {
+  const params: Record<string, string> = { start };
+  if (end) params.end = end;
+  return get<{ data: HackatimeSummaryDay[] }>(token, "/api/v1/authenticated/summaries", params);
+}

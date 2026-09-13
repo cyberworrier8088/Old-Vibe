@@ -13,10 +13,12 @@ import { getDb } from "@/lib/db";
 import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
 
+import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
+
 import { DecisionForm } from "./DecisionForm";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = { title: "review" };
+export const metadata: Metadata = { title: "Superviewer • Review" };
 export const dynamic = "force-dynamic";
 
 const WHEN = new Intl.DateTimeFormat("en-GB", {
@@ -47,8 +49,23 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .from(projectJournals)
     .where(eq(projectJournals.projectId, id));
 
+  // Fetch verified Hackatime project stats with cutoff before 11-9-2026 enforced
+  const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
+  const totalHoursDecimal =
+    audit.totalDecimalHours > 0
+      ? audit.totalDecimalHours
+      : project.trackedSeconds > 0
+        ? Math.round((project.trackedSeconds / 3600) * 10) / 10
+        : 0;
+  const totalHoursFormatted =
+    audit.totalHours !== "0h"
+      ? audit.totalHours
+      : project.trackedSeconds > 0
+        ? formatHours(project.trackedSeconds)
+        : "0h";
+
   return (
-    <AppShell title={project.title}>
+    <AppShell title={`Superviewer • ${project.title}`}>
       <div className={styles.split}>
         <Panel>
           <PanelLabel>the submission</PanelLabel>
@@ -67,7 +84,15 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <div className={styles.fact}>
               <span>maker</span>
               <span>
-                {maker.name} · {maker.slackId}
+                <a
+                  href={`https://hackclub.slack.com/team/${maker.slackId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "var(--lamp)", textDecoration: "underline" }}
+                  title="Open in Hack Club Slack"
+                >
+                  {maker.name} (@{maker.slackId}) ↗
+                </a>
               </span>
             </div>
             <div className={styles.fact}>
@@ -89,15 +114,45 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               </span>
             </div>
           </div>
-          <div className={styles.choices}>
+
+          {/* Superviewer Hackatime Audit Card */}
+          {project.hackatimeProjects.length > 0 ? (
+            <div className={styles.auditCard}>
+              <div className={styles.auditHeader}>
+                <div className={styles.auditTitle}>
+                  <span>⚡</span>
+                  <span>Hackatime Audit</span>
+                </div>
+                <div className={styles.auditTotal}>{totalHoursDecimal}h ({totalHoursFormatted})</div>
+              </div>
+              <div className={styles.cutoffNotice}>
+                📅 Cutoff Rule: Hours logged before <strong>11 Sep 2026</strong> are automatically excluded.
+              </div>
+              <div className={styles.auditList}>
+                {audit.projects.map((p) => (
+                  <div key={p.key} className={styles.auditItem}>
+                    <div>
+                      <span className={styles.auditItemName}>{p.key}</span>
+                      <div style={{ fontSize: 11, color: p.eligible ? "var(--muted)" : "var(--bad)" }}>
+                        {p.note}
+                      </div>
+                    </div>
+                    <span className={styles.auditItemHours}>{p.hours}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className={styles.choices} style={{ marginTop: 16 }}>
             {project.repoUrl ? (
-              <ButtonLink href={project.repoUrl} variant="quiet">
-                repo
+              <ButtonLink href={project.repoUrl} variant="quiet" target="_blank" rel="noreferrer">
+                view repo ↗
               </ButtonLink>
             ) : null}
             {project.demoUrl ? (
-              <ButtonLink href={project.demoUrl} variant="quiet">
-                demo
+              <ButtonLink href={project.demoUrl} variant="quiet" target="_blank" rel="noreferrer">
+                live demo ↗
               </ButtonLink>
             ) : null}
           </div>
@@ -133,7 +188,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           ) : !project.submittedAt ? (
             <Banner tone="warn">This is still a draft, so there is nothing to decide.</Banner>
           ) : (
-            <DecisionForm id={project.id} trackedProjects={project.hackatimeProjects.length} />
+            <DecisionForm
+              id={project.id}
+              trackedProjects={project.hackatimeProjects.length}
+              defaultHours={totalHoursDecimal}
+              totalTrackedFormatted={totalHoursFormatted}
+            />
           )}
         </Panel>
       </div>
