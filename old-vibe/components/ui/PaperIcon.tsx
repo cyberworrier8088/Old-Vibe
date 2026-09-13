@@ -6,7 +6,7 @@ export type PaperIconProps = SVGProps<SVGSVGElement> & {
 };
 
 export function PaperIcon({
-  size = 20,
+  size = 24,
   variant = "default",
   className,
   style,
@@ -14,11 +14,18 @@ export function PaperIcon({
 }: PaperIconProps) {
   const isGold = variant === "gold";
 
+  // Detailed realistic colors
+  const primary = isGold ? "#854d0e" : "#14532d";
+  const secondary = isGold ? "#ca8a04" : "#166534";
+  const accent = isGold ? "#eab308" : "#22c55e";
+  const bg = isGold ? "#fef08a" : "#dcfce7";
+  const innerBg = isGold ? "#fef9c3" : "#f0fdf4";
+
   return (
     <svg
       width={size}
-      height={Math.round((size * 18) / 24)}
-      viewBox="0 0 28 20"
+      height={Math.round((size * 12) / 24)}
+      viewBox="0 0 48 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -27,82 +34,90 @@ export function PaperIcon({
       {...props}
     >
       <defs>
-        <linearGradient
-          id={isGold ? "goldGrad" : "paperGrad"}
-          x1="0"
-          y1="0"
-          x2="28"
-          y2="20"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor={isGold ? "#fffbeb" : "#f4f8f3"} />
-          <stop offset="1" stopColor={isGold ? "#fef3c7" : "#e3ede2"} />
+        {/* Subtle wavy texture pattern */}
+        <pattern id={`waveTexture_${variant}`} width="4" height="4" patternUnits="userSpaceOnUse">
+          <path d="M0 2 Q 1 0 2 2 T 4 2" fill="none" stroke={secondary} strokeWidth="0.2" opacity="0.4" />
+        </pattern>
+        {/* Gradient for a slight shiny/folded effect */}
+        <linearGradient id={`billShine_${variant}`} x1="0" y1="0" x2="48" y2="24" gradientUnits="userSpaceOnUse">
+          <stop stopColor={bg} />
+          <stop offset="0.3" stopColor={innerBg} />
+          <stop offset="0.7" stopColor={bg} />
+          <stop offset="1" stopColor={innerBg} />
         </linearGradient>
       </defs>
 
-      {/* Banknote / Paper Bill Outer Body */}
-      <rect
-        x="1.5"
-        y="1.5"
-        width="25"
-        height="17"
-        rx="2.5"
-        fill={`url(#${isGold ? "goldGrad" : "paperGrad"})`}
-        stroke={isGold ? "#b45309" : "#243c2c"}
-        strokeWidth="1.5"
-      />
+      {/* Main Bill Base with shadow */}
+      <rect x="1.5" y="1.5" width="45" height="21" rx="1.5" fill={`url(#billShine_${variant})`} stroke={primary} strokeWidth="1" />
+      
+      {/* Background Texture Overlay */}
+      <rect x="2.5" y="2.5" width="43" height="19" rx="1" fill={`url(#waveTexture_${variant})`} />
 
-      {/* Decorative Guilloche Border */}
-      <rect
-        x="3.5"
-        y="3.5"
-        width="21"
-        height="13"
-        rx="1.5"
+      {/* Intricate Inner Border */}
+      <path
+        d="M 4 4 L 44 4 L 44 20 L 4 20 Z"
         fill="none"
-        stroke={isGold ? "#d97706" : "#3d644a"}
-        strokeWidth="0.8"
-        strokeDasharray="2 1.2"
+        stroke={secondary}
+        strokeWidth="0.5"
+      />
+      <path
+        d="M 5 5 L 43 5 L 43 19 L 5 19 Z"
+        fill="none"
+        stroke={primary}
+        strokeWidth="0.5"
+        strokeDasharray="1 1"
       />
 
-      {/* Corner Security Marks */}
-      <circle cx="5" cy="5" r="0.75" fill={isGold ? "#b45309" : "#243c2c"} />
-      <circle cx="23" cy="5" r="0.75" fill={isGold ? "#b45309" : "#243c2c"} />
-      <circle cx="5" cy="15" r="0.75" fill={isGold ? "#b45309" : "#243c2c"} />
-      <circle cx="23" cy="15" r="0.75" fill={isGold ? "#b45309" : "#243c2c"} />
+      {/* Corner Ornaments */}
+      <circle cx="6" cy="6" r="1" fill={primary} />
+      <circle cx="42" cy="6" r="1" fill={primary} />
+      <circle cx="6" cy="18" r="1" fill={primary} />
+      <circle cx="42" cy="18" r="1" fill={primary} />
+      
+      {/* Corner Denomination / Watermarks */}
+      <text x="8" y="7.5" fill={primary} fontSize="3" fontFamily="monospace" fontWeight="bold">1</text>
+      <text x="38" y="7.5" fill={primary} fontSize="3" fontFamily="monospace" fontWeight="bold">1</text>
+      <text x="8" y="19.5" fill={primary} fontSize="3" fontFamily="monospace" fontWeight="bold">1</text>
+      <text x="38" y="19.5" fill={primary} fontSize="3" fontFamily="monospace" fontWeight="bold">1</text>
 
-      {/* Center Medallion Seal */}
-      <ellipse
-        cx="14"
-        cy="10"
-        rx="4.5"
-        ry="4"
-        fill={isGold ? "#fde68a" : "#d1e3d0"}
-        stroke={isGold ? "#92400e" : "#243c2c"}
-        strokeWidth="1"
-      />
+      {/* Center Medallion / Presidential Portrait frame */}
+      <ellipse cx="24" cy="12" rx="6" ry="7" fill={innerBg} stroke={primary} strokeWidth="0.5" />
+      <ellipse cx="24" cy="12" rx="5" ry="6" fill="none" stroke={secondary} strokeWidth="0.3" strokeDasharray="0.5 0.5" />
 
-      {/* Center Emblem: Crown for Gold, Classic V for Vibe */}
+      {/* Medallion Core Design */}
       {isGold ? (
+        // Detailed gold crown / star
         <path
-          d="M14 7.2L14.9 9.1H16.8L15.3 10.2L15.9 12L14 10.9L12.1 12L12.7 10.2L11.2 9.1H13.1L14 7.2Z"
-          fill="#b45309"
+          d="M 24 7.5 L 25.5 10 L 28 10.5 L 26 12.5 L 26.5 15.5 L 24 14 L 21.5 15.5 L 22 12.5 L 20 10.5 L 22.5 10 Z"
+          fill={accent}
+          stroke={primary}
+          strokeWidth="0.3"
         />
       ) : (
+        // Detailed eagle/pyramid shape (Illuminati vibes)
         <path
-          d="M12 8L14 12.2L16 8"
-          stroke="#243c2c"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          d="M 24 7 L 27 15 L 21 15 Z"
+          fill="none"
+          stroke={primary}
+          strokeWidth="0.5"
         />
       )}
+      {!isGold && (
+        <circle cx="24" cy="10" r="1" fill={primary} />
+      )}
 
-      {/* Engraving Hatch Lines */}
-      <path d="M7 8.5H8.5" stroke={isGold ? "#d97706" : "#4a7458"} strokeWidth="0.8" strokeLinecap="round" />
-      <path d="M7 11.5H8.5" stroke={isGold ? "#d97706" : "#4a7458"} strokeWidth="0.8" strokeLinecap="round" />
-      <path d="M19.5 8.5H21" stroke={isGold ? "#d97706" : "#4a7458"} strokeWidth="0.8" strokeLinecap="round" />
-      <path d="M19.5 11.5H21" stroke={isGold ? "#d97706" : "#4a7458"} strokeWidth="0.8" strokeLinecap="round" />
+      {/* Side Decorative Seals */}
+      <circle cx="14" cy="12" r="3" fill="none" stroke={secondary} strokeWidth="0.4" />
+      <circle cx="14" cy="12" r="2.5" fill="none" stroke={secondary} strokeWidth="0.4" strokeDasharray="0.5 0.5" />
+      <path d="M 13 12 L 15 12 M 14 11 L 14 13" stroke={primary} strokeWidth="0.4" />
+      
+      <circle cx="34" cy="12" r="3" fill="none" stroke={secondary} strokeWidth="0.4" />
+      <path d="M 32.5 12 L 35.5 12" stroke={primary} strokeWidth="0.4" />
+      
+      {/* Signature Lines & Tiny Text block */}
+      <path d="M 12 18 L 16 18" stroke={primary} strokeWidth="0.3" strokeLinecap="round" />
+      <path d="M 32 18 L 36 18" stroke={primary} strokeWidth="0.3" strokeLinecap="round" />
+      <path d="M 21 4.5 L 27 4.5" stroke={primary} strokeWidth="0.4" strokeLinecap="round" />
     </svg>
   );
 }
