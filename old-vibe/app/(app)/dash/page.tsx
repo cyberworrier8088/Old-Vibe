@@ -15,7 +15,8 @@ import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { isOpen, projectStatus } from "@/lib/projects/status";
-import { beansForMinutes, hoursLabel } from "@/lib/beans";
+import { balanceFor, beansForMinutes, hoursLabel } from "@/lib/beans";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 
 import styles from "./page.module.css";
 
@@ -28,11 +29,14 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=%2Fdash");
 
-  const mine = await getDb()
-    .select()
-    .from(projects)
-    .where(eq(projects.userSub, user.sub))
-    .orderBy(desc(projects.createdAt));
+  const [mine, balances] = await Promise.all([
+    getDb()
+      .select()
+      .from(projects)
+      .where(eq(projects.userSub, user.sub))
+      .orderBy(desc(projects.createdAt)),
+    balanceFor(user.sub)
+  ]);
 
   const owl = (
     <Image src="/assets/owl.png" alt="" width={64} height={64} className="pixel" unoptimized />
@@ -69,10 +73,6 @@ export default async function DashboardPage() {
     (total, project) => total + (project.approvedMinutes ?? 0),
     0,
   );
-  const beans = approved.reduce(
-    (total, project) => total + beansForMinutes(project.approvedMinutes),
-    0,
-  );
   const waiting = mine.filter(isOpen);
 
   return (
@@ -84,13 +84,38 @@ export default async function DashboardPage() {
           value={hoursLabel(approvedMinutes)}
           sub={approved.length === 1 ? "across 1 project" : `across ${approved.length} projects`}
         />
-        <StatCard label="beans" value={beans} sub="5 per approved hour" />
+        <StatCard
+          label={
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              paper <PaperIcon size={18} />
+            </span>
+          }
+          value={balances.paper}
+          sub={`${(4.0 + (user.streak * 0.1)).toFixed(1)} per approved hour`}
+        />
+        {balances.gold > 0 && (
+          <StatCard
+            label={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                gold paper <PaperIcon size={18} variant="gold" />
+              </span>
+            }
+            value={balances.gold}
+            sub="for special items"
+          />
+        )}
+        <StatCard
+          label="streak"
+          value={user.streak ?? 0}
+          sub="days of consecutive coding"
+        />
         <StatCard
           label="waiting on us"
           value={waiting.length}
           sub={waiting.length === 0 ? "nothing in the queue" : "we will message you on Slack"}
         />
       </div>
+
       <Panel>
         <div className={styles.head}>
           <PanelLabel>your projects</PanelLabel>

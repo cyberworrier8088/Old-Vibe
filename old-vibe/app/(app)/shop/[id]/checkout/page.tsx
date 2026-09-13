@@ -7,6 +7,7 @@ import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { readAddress } from "@/lib/address";
 import { getCurrentUser } from "@/lib/auth/users";
 import { balanceFor } from "@/lib/beans";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { getDb } from "@/lib/db";
 import { items } from "@/lib/db/schema";
 
@@ -24,7 +25,8 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
   const [item] = await getDb().select().from(items).where(eq(items.id, id)).limit(1);
   if (!item || item.hidden) notFound();
 
-  const balance = await balanceFor(user.sub);
+  const balances = await balanceFor(user.sub);
+  const balance = item.currency === "gold" ? balances.gold : balances.paper;
   const saved = readAddress(user);
   const soldOut = item.stock !== null && item.stock <= 0;
   if (soldOut || balance < item.cost) redirect(`/shop/${item.id}`);
@@ -48,15 +50,15 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
           <div className={styles.sums}>
             <div className={styles.line}>
               <span>{item.name}</span>
-              <span>{item.cost} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {item.cost} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
             <div className={styles.line}>
               <span>balance now</span>
-              <span>{balance} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {balance} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
             <div className={[styles.line, styles.after].join(" ")}>
               <span>balance after</span>
-              <span>{balance - item.cost} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {balance - item.cost} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
           </div>
           <p className={styles.note}>Grants usually take two to three weeks to arrive.</p>

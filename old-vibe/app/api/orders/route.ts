@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       const [balanceRow] = await tx
         .select({ total: sql<number>`coalesce(sum(${beansLedger.delta}), 0)::int` })
         .from(beansLedger)
-        .where(eq(beansLedger.userSub, user.sub));
+        .where(and(eq(beansLedger.userSub, user.sub), eq(beansLedger.currency, item.currency)));
 
       if ((balanceRow?.total ?? 0) < item.cost) throw new Error("too_poor");
 
@@ -78,6 +78,7 @@ export async function POST(request: Request) {
           itemId: item.id,
           itemName: item.name,
           cost: item.cost,
+          costCurrency: item.currency,
           fullName: address.fullName,
           email: body.email?.trim().toLowerCase(),
           addressLine1: address.addressLine1,
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
         userSub: user.sub,
         delta: -item.cost,
         reason: "purchase",
+        currency: item.currency,
         note: item.name,
       });
 
@@ -123,7 +125,7 @@ export async function POST(request: Request) {
     }
     if (reason === "too_poor") {
       return NextResponse.json(
-        { error: "too_poor", message: "You do not have enough beans for that." },
+        { error: "too_poor", message: "You do not have enough paper for that." },
         { status: 409 },
       );
     }

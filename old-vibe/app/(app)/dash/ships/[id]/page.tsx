@@ -10,7 +10,7 @@ import { ProjectStatusWord } from "@/components/ui/StatusWord";
 import { hoursLabel } from "@/lib/beans";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
-import { projects, users } from "@/lib/db/schema";
+import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
 
 import { DecisionForm } from "./DecisionForm";
@@ -42,12 +42,27 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const { project, maker } = row;
   const decided = Boolean(project.decision);
 
+  const journals = await getDb()
+    .select()
+    .from(projectJournals)
+    .where(eq(projectJournals.projectId, id));
+
   return (
     <AppShell title={project.title}>
       <div className={styles.split}>
         <Panel>
           <PanelLabel>the submission</PanelLabel>
-          {project.description ? <p className={styles.description}>{project.description}</p> : null}
+          {project.thumbnailUrl ? (
+            <div style={{ margin: "16px 0", borderRadius: 8, overflow: "hidden", border: "1px solid var(--rule)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={project.thumbnailUrl}
+                alt="Project screenshot"
+                style={{ width: "100%", maxHeight: 320, objectFit: "cover", display: "block" }}
+              />
+            </div>
+          ) : null}
+          {project.description ? <p className={styles.description} style={{ whiteSpace: "pre-wrap" }}>{project.description}</p> : null}
           <div className={styles.facts}>
             <div className={styles.fact}>
               <span>maker</span>
@@ -86,6 +101,24 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               </ButtonLink>
             ) : null}
           </div>
+
+          {journals.length > 0 ? (
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--rule)" }}>
+              <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)", marginBottom: 12 }}>
+                Maker Dev Notes & Journals ({journals.length})
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {journals.map((j) => (
+                  <div key={j.id} style={{ background: "var(--raised)", padding: 12, borderRadius: 6, border: "1px solid var(--rule)" }}>
+                    <div style={{ fontSize: 11, fontFamily: "var(--data)", color: "var(--muted)", marginBottom: 4 }}>
+                      {WHEN.format(j.createdAt)}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 14, whiteSpace: "pre-wrap" }}>{j.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </Panel>
 
         <Panel>

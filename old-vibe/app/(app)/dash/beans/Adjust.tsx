@@ -48,8 +48,8 @@ export function Adjust({ userSub, name }: { userSub: string; name: string }) {
       <div className={styles.row}>
         <Field
           id={`${ids}-delta`}
-          label="beans"
-          help="Negative takes them away."
+          label="paper"
+          help="Negative takes paper away."
           error={errorFor("delta")}
         >
           <Input

@@ -33,6 +33,8 @@ export const users = pgTable("users", {
   stateProvince: text("state_province"),
   postcode: text("postcode"),
   country: text("country"),
+  streak: integer("streak").notNull().default(0),
+  lastCodingDate: date("last_coding_date"),
 });
 
 export const decision = pgEnum("decision", ["approved", "changes", "rejected", "withdrawn"]);
@@ -63,6 +65,25 @@ export const projects = pgTable(
   (table) => [
     index("projects_user_sub_idx").on(table.userSub),
     uniqueIndex("projects_user_sub_repo_url_idx").on(table.userSub, table.repoUrl),
+  ],
+);
+
+export const projectJournals = pgTable(
+  "project_journals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userSub: text("user_sub")
+      .notNull()
+      .references(() => users.sub, { onUpdate: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("project_journals_project_id_idx").on(table.projectId),
+    index("project_journals_user_sub_idx").on(table.userSub),
   ],
 );
 
@@ -111,6 +132,7 @@ export const yswsSubmissions = pgTable(
 );
 
 export const beansReason = pgEnum("beans_reason", ["approval", "revert", "purchase", "manual"]);
+export const currencyType = pgEnum("currency_type", ["paper", "gold"]);
 
 export const beansLedger = pgTable(
   "beans_ledger",
@@ -121,6 +143,7 @@ export const beansLedger = pgTable(
       .references(() => users.sub, { onUpdate: "cascade" }),
     delta: integer("delta").notNull(),
     reason: beansReason("reason").notNull(),
+    currency: currencyType("currency").notNull().default("paper"),
     projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -138,6 +161,7 @@ export const items = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     cost: integer("cost").notNull(),
+    currency: currencyType("currency").notNull().default("paper"),
     imageUrl: text("image_url"),
     stock: integer("stock"),
     hidden: boolean("hidden").notNull().default(false),
@@ -171,6 +195,7 @@ export const orders = pgTable(
 
     itemName: text("item_name").notNull(),
     cost: integer("cost").notNull(),
+    costCurrency: currencyType("cost_currency").notNull().default("paper"),
     status: orderStatus("status").notNull().default("placed"),
 
     fullName: text("full_name"),
@@ -208,3 +233,5 @@ export type Item = typeof items.$inferSelect;
 export type NewItem = typeof items.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
+export type ProjectJournal = typeof projectJournals.$inferSelect;
+export type NewProjectJournal = typeof projectJournals.$inferInsert;

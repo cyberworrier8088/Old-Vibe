@@ -28,6 +28,9 @@ export async function AppShell({
     <>
       <div className={styles.shell}>
         <aside className={styles.side}>
+          <a href="https://hackclub.com/">
+            <img style={{ position: "absolute", top: 0, left: 10, border: 0, width: 256, zIndex: 999 }} src="https://assets.hackclub.com/flag-orpheus-top.svg" alt="Hack Club" />
+          </a>
           <Link href="/dash" className={styles.brand}>
             <OldManFace size={26} />
             <span className={styles.wordmark}>Old Vibe</span>
@@ -46,6 +49,10 @@ export async function AppShell({
       <div className={styles.bar}>
         <NavLinks variant="bar" items={nav} />
       </div>
+      <a href="https://hackclub.com/" target="_blank" rel="noreferrer" className={styles.madeBy}>
+        OldVibe is made with ♥ by teenagers, for teenagers.
+        <img src="https://assets.hackclub.com/icon-progress-rounded.svg" alt="Hack Club" className={styles.madeByIcon} />
+      </a>
     </>
   );
 }

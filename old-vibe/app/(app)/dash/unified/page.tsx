@@ -5,7 +5,6 @@ import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { readApproved, refreshQueued } from "@/lib/ysws/submissions";
-import { yswsIsConfigured } from "@/lib/ysws/config";
 import { Banner } from "@/components/ui/Banner";
 
 import { Rows } from "./Rows";
@@ -23,12 +22,9 @@ export default async function UnifiedPage() {
 
   return (
     <AppShell title="unified">
-      {yswsIsConfigured() ? null : (
-        <Banner tone="warn" title="the bridge is not set up here">
-          YSWS_PROGRAM_ID and YSWS_BRIDGE_SECRET are not both set, so a preview works but sending
-          will not.
-        </Banner>
-      )}
+      <Banner tone="info" title="Reviewing tool coming soon please wait">
+        We are removing the ARI reviewing tool. The new reviewing tool is coming soon.
+      </Banner>
 
       <Panel>
         <PanelLabel>

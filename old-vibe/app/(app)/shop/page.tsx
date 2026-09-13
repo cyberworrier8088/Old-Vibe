@@ -11,6 +11,7 @@ import { balanceFor } from "@/lib/beans";
 import { getDb } from "@/lib/db";
 import { items } from "@/lib/db/schema";
 import { BEANS_PER_HOUR } from "@/lib/rewards";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 
 import styles from "./page.module.css";
 
@@ -34,13 +35,22 @@ export default async function ShopPage() {
     <AppShell
       title="Old Vibe Shop"
       action={
-        <span className={styles.balance}>
-          🪙 {balance} credits
-        </span>
+        <div className={styles.balances}>
+          <span className={styles.balance}>
+            <PaperIcon size={18} />
+            {" "}{balance.paper} paper
+          </span>
+          {balance.gold > 0 ? (
+            <span className={styles.balance}>
+              <PaperIcon size={18} variant="gold" />
+              {" "}{balance.gold} gold paper
+            </span>
+          ) : null}
+        </div>
       }
     >
-      <Banner tone="info" title={`Every approved hour of real coding earns ${BEANS_PER_HOUR} digital credits`}>
-        Spend your digital currency earned from coding in the Old Vibe shop to buy cool hacker valuable items.
+      <Banner tone="info" title={`Every approved hour of real coding earns ${BEANS_PER_HOUR} paper`}>
+        Spend your paper digital currency earned from coding in the Old Vibe shop to buy cool hacker valuable items.
       </Banner>
 
       {rows.length === 0 ? (
@@ -51,7 +61,8 @@ export default async function ShopPage() {
         <div className={styles.grid}>
           {rows.map((item) => {
             const soldOut = item.stock !== null && item.stock <= 0;
-            const short = item.cost - balance;
+            const itemBalance = item.currency === "gold" ? balance.gold : balance.paper;
+            const short = item.cost - itemBalance;
             const affordable = short <= 0;
 
             return (
@@ -74,7 +85,8 @@ export default async function ShopPage() {
                   <span className={styles.description}>{item.description}</span>
                 ) : null}
                 <span className={styles.price}>
-                  🪙 {item.cost} credits
+                  <PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} />
+                  {" "}{item.cost} {item.currency === "gold" ? "gold paper" : "paper"}
                   {item.stock !== null ? (
                     <span className={soldOut ? styles.gone : styles.stock}>
                       {soldOut ? "none left" : `${item.stock} left`}
@@ -91,7 +103,7 @@ export default async function ShopPage() {
                   </ButtonLink>
                 ) : (
                   <ButtonLink href="/dash" variant="quiet" aria-disabled="true">
-                    {short} credits short
+                    {short} {item.currency === "gold" ? "gold paper" : "paper"} short
                   </ButtonLink>
                 )}
               </div>

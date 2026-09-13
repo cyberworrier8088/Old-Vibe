@@ -59,6 +59,12 @@
   border-radius: 0 var(--radius-input) var(--radius-input) 0;
 }
 
+.balances {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .balance {
   display: inline-flex;
   align-items: center;

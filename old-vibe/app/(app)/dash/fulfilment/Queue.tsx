@@ -67,7 +67,7 @@ export function Queue({ rows }: { rows: QueueRow[] }) {
             <div className={styles.head}>
               <span>
                 <span className={styles.item}>{order.itemName}</span>
-                <span className={styles.maker}>{" "}{maker.name} · {maker.slackId} · {order.cost} beans</span>
+                <span className={styles.maker}>{" "}{maker.name} · {maker.slackId} · {order.cost} paper</span>
               </span>
               <OrderStatusWord status={orderStatusOf(order.status)} size="s" />
             </div>

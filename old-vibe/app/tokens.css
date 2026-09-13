@@ -13,6 +13,17 @@
   --lilac: #635d55;
   --muted: #8c8479;
 
+  /* Paper Currency Tokens */
+  --paper-green: #15803d;
+  --paper-green-bg: #f0fdf4;
+  --paper-green-border: #bbf7d0;
+  --paper-green-glow: 0 0 16px rgba(21, 128, 61, 0.25);
+
+  --paper-gold: #b45309;
+  --paper-gold-bg: #fffbeb;
+  --paper-gold-border: #fde68a;
+  --paper-gold-glow: 0 0 16px rgba(180, 83, 9, 0.25);
+
   /* Accents & Stamps */
   --lamp: #181512;
   --on-lamp: #ffffff;

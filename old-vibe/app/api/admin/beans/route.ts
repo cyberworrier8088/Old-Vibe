@@ -8,7 +8,7 @@ import { beansLedger, users } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
-type Body = { userSub?: string; delta?: number; note?: string };
+type Body = { userSub?: string; delta?: number; note?: string; currency?: "paper" | "gold" };
 
 function invalid(field: string, message: string) {
   return NextResponse.json({ error: "invalid", field, message }, { status: 422 });
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     userSub: maker.sub,
     delta,
     reason: "manual",
+    currency: body.currency === "gold" ? "gold" : "paper",
     note: `${note} (by ${organizer?.slackId ?? "organizer"})`,
   });
 

@@ -3,7 +3,7 @@ export const HACKATIME_STATE_COOKIE = "hackatime_state";
 export const HACKATIME_SCOPES = "profile read";
 
 export type HackatimeProfile = { id?: string | number; slack_id?: string };
-export type HackatimeProject = { name: string; total_seconds: number };
+export type HackatimeProject = { name: string; total_seconds: number; created_at?: string };
 
 function base(): string {
   return (process.env.HACKATIME_BASE_URL ?? "https://hackatime.hackclub.com").replace(/\/$/, "");

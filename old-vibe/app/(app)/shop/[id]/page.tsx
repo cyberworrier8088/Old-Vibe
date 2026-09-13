@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { getCurrentUser } from "@/lib/auth/users";
 import { balanceFor } from "@/lib/beans";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { getDb } from "@/lib/db";
 import { items } from "@/lib/db/schema";
 
@@ -25,7 +26,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
   if (!item || item.hidden) notFound();
 
-  const balance = await balanceFor(user.sub);
+  const balances = await balanceFor(user.sub);
+  const balance = item.currency === "gold" ? balances.gold : balances.paper;
   const short = item.cost - balance;
   const soldOut = item.stock !== null && item.stock <= 0;
   const affordable = short <= 0;
@@ -51,11 +53,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           <div className={styles.sums}>
             <div className={styles.line}>
               <span>{item.name}</span>
-              <span>{item.cost} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {item.cost} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
             <div className={styles.line}>
               <span>your balance</span>
-              <span>{balance} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {balance} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
             <div
               className={[styles.line, styles.after, affordable ? null : styles.negative]
@@ -63,7 +65,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                 .join(" ")}
             >
               <span>balance after</span>
-              <span>{balance - item.cost} beans</span>
+              <span><PaperIcon size={16} variant={item.currency === "gold" ? "gold" : "default"} /> {balance - item.cost} {item.currency === "gold" ? "gold paper" : "paper"}</span>
             </div>
           </div>
 
@@ -81,7 +83,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             </>
           ) : (
             <>
-              <Banner tone="warn" title={`${short} beans short`}>
+              <Banner tone="warn" title={`${short} ${item.currency === "gold" ? "gold paper" : "paper"} short`}>
                 That is {Math.ceil(short / 5)} more approved hours. Ship something else and come
                 back.
               </Banner>

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
 import { beansLedger, users } from "@/lib/db/schema";
@@ -12,7 +13,7 @@ import { beansLedger, users } from "@/lib/db/schema";
 import { Adjust } from "./Adjust";
 import styles from "./Adjust.module.css";
 
-export const metadata: Metadata = { title: "beans" };
+export const metadata: Metadata = { title: "paper" };
 export const dynamic = "force-dynamic";
 
 const WHEN = new Intl.DateTimeFormat("en-GB", {
@@ -56,7 +57,7 @@ export default async function BeansPage({
     : [];
 
   return (
-    <AppShell title="beans">
+    <AppShell title="paper">
       <Panel>
         <PanelLabel>{makers.length === 1 ? "1 maker" : `${makers.length} makers`}</PanelLabel>
         <div className={styles.list}>
@@ -72,7 +73,9 @@ export default async function BeansPage({
                 <span className={styles.name}>{entry.name}</span>
                 <span className={styles.sub}>{entry.slackId}</span>
               </span>
-              <span className={styles.balance}>{entry.balance}</span>
+              <span className={styles.balance} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                {entry.balance} <PaperIcon size={14} />
+              </span>
             </Link>
           ))}
         </div>

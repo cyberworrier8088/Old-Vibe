@@ -15,20 +15,30 @@ import styles from "./SubmitForm.module.css";
 
 type Problem = { field?: string; message: string };
 
-export function SubmitForm({ projects }: { projects: PickerProject[] }) {
+export type DraftProject = {
+  id: string;
+  title: string;
+  description: string;
+  repoUrl: string;
+  demoUrl: string;
+  thumbnailUrl: string;
+  hackatimeProjects: string[];
+};
+
+export function SubmitForm({ projects, draft }: { projects: PickerProject[], draft?: DraftProject }) {
   const router = useRouter();
   const ids = useId();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [picked, setPicked] = useState<string[]>([]);
+  const [title, setTitle] = useState(draft?.title ?? "");
+  const [description, setDescription] = useState(draft?.description ?? "");
+  const [repoUrl, setRepoUrl] = useState(draft?.repoUrl ?? "");
+  const [demoUrl, setDemoUrl] = useState(draft?.demoUrl ?? "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(draft?.thumbnailUrl ?? "");
+  const [picked, setPicked] = useState<string[]>(draft?.hackatimeProjects ?? []);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [sending, setSending] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const draftId = useRef<string | null>(null);
+  const draftId = useRef<string | null>(draft?.id ?? null);
   const saving = useRef(false);
 
   const saveDraft = useCallback(async () => {
@@ -125,11 +135,16 @@ export function SubmitForm({ projects }: { projects: PickerProject[] }) {
 
         <Field
           id={`${ids}-description`}
-          label="what is it?"
-          help="One or two sentences. First thing a reviewer reads."
+          label="what did you build?"
+          help="Describe what your project does, how the reviewer can test or run it, and what tech you used."
           error={errorFor("description")}
         >
-          <Textarea value={description} onChange={(event) => setDescription(event.target.value)} />
+          <Textarea
+            rows={5}
+            placeholder="• What it does: (Key features & functionality)&#10;• How to test/run: (Steps to try the demo or run locally)&#10;• Tech stack: (Languages, tools, and libraries used)&#10;• Handwritten notes: (Challenges you solved by hand)"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
         </Field>
 
         <Field

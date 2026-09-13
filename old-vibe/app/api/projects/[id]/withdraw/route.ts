@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   await db
     .update(projects)
     .set({ decision: "withdrawn", decidedAt: new Date() })
-    .where(eq(projects.id, project.id));
+    .where(and(eq(projects.id, project.id), eq(projects.userSub, user.sub)));
 
   return NextResponse.json({ ok: true, status: "withdrawn" });
 }

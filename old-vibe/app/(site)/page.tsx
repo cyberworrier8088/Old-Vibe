@@ -2,6 +2,7 @@ import { Section } from "@/components/site/Section";
 import { Faq } from "@/components/site/Faq";
 import { Steps } from "@/components/site/Steps";
 import { ButtonLink } from "@/components/ui/Button";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 
 import styles from "./page.module.css";
 
@@ -14,12 +15,14 @@ export default function HomePage() {
           <span>•</span>
           <span>No AI</span>
           <span>•</span>
-          <span>Digital Currency Rewards</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <PaperIcon size={16} variant="default" /> Paper Currency Rewards
+          </span>
         </div>
 
         <h1 className={styles.heading}>
           You ship handwritten code.
-          <span className={styles.headingHighlight}>We grant digital currency for the Old Vibe shop.</span>
+          <span className={styles.headingHighlight}>We grant Paper digital currency for the Old Vibe shop.</span>
         </h1>
 
         <p className={styles.lead}>
@@ -39,14 +42,18 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className={styles.dealCard}>
+          <div className={`${styles.dealCard} ${styles.dealCardPaper}`}>
             <div className={styles.dealHeader}>
-              <span className={`${styles.dealTag} ${styles.dealTagReward}`}>We Ship</span>
+              <span className={`${styles.dealTag} ${styles.dealTagReward}`}>
+                <PaperIcon size={14} variant="gold" /> We Ship
+              </span>
             </div>
-            <h2 className={styles.dealTitle}>Digital Currency</h2>
+            <h2 className={styles.dealTitle} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              Paper Currency <PaperIcon size={22} variant="default" />
+            </h2>
             <p className={styles.dealBody}>
-              For every authentic hour you spend coding, you earn digital currency credited directly to your
-              account. Spend it in the Old Vibe shop to buy cool hacker valuable items.
+              For every authentic hour you spend coding, you earn Paper digital currency credited directly to your
+              account. Spend your Paper in the Old Vibe shop to buy cool hacker items and hardware grants!
             </p>
           </div>
         </div>
@@ -70,7 +77,28 @@ export default function HomePage() {
         <Steps />
       </Section>
 
-      <Section id="faq" label="questions & rules">
+      <Section id="rules" label="the rules">
+        <div className={styles.rulesContent}>
+          <h2 className={styles.dealTitle}>Old Vibe Code Only</h2>
+          <p className={styles.dealBody}>
+            You can use AI for research and learning, but <strong>using AI to generate code or copy-pasting AI code is strictly prohibited.</strong>
+            A 1% usage threshold is allowed, but anything more requires a detailed explanation or your project will be rejected. 
+            If you want to build with AI, this is not the YSWS for you.
+          </p>
+          
+          <h2 className={styles.dealTitle}>2+ Hours Minimum</h2>
+          <p className={styles.dealBody}>
+            You must have at least 2 hours of tracked time in Hackatime for your project to be eligible for submission. We value genuine effort.
+          </p>
+
+          <h2 className={styles.dealTitle}>Submission Cut-off</h2>
+          <p className={styles.dealBody}>
+            The deadline for all submissions is <strong>September 11, 2026</strong>. Hackatime hours and projects logged after this date will not be accepted.
+          </p>
+        </div>
+      </Section>
+
+      <Section id="faq" label="questions">
         <Faq />
       </Section>
     </>

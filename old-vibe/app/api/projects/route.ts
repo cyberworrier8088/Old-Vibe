@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, isNotNull, ne } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { validateSubmission } from "@/lib/ari/payload";
@@ -7,8 +7,9 @@ import { canShip, checkEligibility } from "@/lib/auth/eligibility";
 import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { getReviewBackend, reviewIsExternal } from "@/lib/review";
+import { reviewIsExternal } from "@/lib/review";
 import type { ReviewSubmission } from "@/lib/review";
+import { getPickerProjects } from "@/lib/hackatime/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Body;
   } catch {
-    return invalid("body", "That request was not readable.");
+    return invalid("", "That request was not readable.");
   }
 
   const title = body.title?.trim() ?? "";
@@ -61,6 +62,23 @@ export async function POST(request: Request) {
     maker: { email: user.email, name: user.name, slackId: user.slackId },
     updateMessage: body.updateMessage,
   };
+
+  // const cutoffDate = new Date("2026-09-11T00:00:00Z");
+  // if (new Date() > cutoffDate) {
+  //   return invalid("", "The deadline for submissions was September 11, 2026. Submissions are now closed.");
+  // }
+
+  const pickerProjects = await getPickerProjects(user);
+  if (!pickerProjects) {
+    return invalid("hackatime_projects", "Hackatime is not connected.");
+  }
+  const totalSeconds = candidate.hackatimeProjects.reduce((sum, key) => {
+    const proj = pickerProjects.find((p) => p.key === key);
+    return sum + (proj ? proj.seconds : 0);
+  }, 0);
+  if (totalSeconds < 7200) { // 2 hours
+    return invalid("hackatime_projects", "You must have at least 2 hours (7200 seconds) of Hackatime tracked to submit this project.");
+  }
 
   const problem = validateSubmission(candidate);
   if (problem) return invalid(problem.field, problem.message);
@@ -81,6 +99,31 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
+
+  // Prevent double dipping: ensure no selected Hackatime project was already claimed in another submission
+  if (candidate.hackatimeProjects.length > 0) {
+    const claimed = await db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        hackatimeProjects: projects.hackatimeProjects,
+      })
+      .from(projects)
+      .where(and(body.id ? ne(projects.id, body.id) : undefined, isNotNull(projects.submittedAt)));
+
+    for (const proj of claimed) {
+      const duplicate = candidate.hackatimeProjects.find((key) =>
+        proj.hackatimeProjects.includes(key)
+      );
+      if (duplicate) {
+        return invalid(
+          "hackatime_projects",
+          `The Hackatime project "${duplicate}" was already claimed for "${proj.title}". Double dipping is not allowed!`
+        );
+      }
+    }
+  }
+
   const values = {
     title,
     description: body.description?.trim() ?? null,
@@ -102,7 +145,7 @@ export async function POST(request: Request) {
       if (existing[0].submittedAt && !existing[0].decision) {
         return NextResponse.json({ error: "already_queued" }, { status: 409 });
       }
-      [row] = await db.update(projects).set(values).where(eq(projects.id, body.id)).returning();
+      [row] = await db.update(projects).set(values).where(and(eq(projects.id, body.id), eq(projects.userSub, user.sub))).returning();
     } else {
       [row] = await db
         .insert(projects)
@@ -117,16 +160,6 @@ export async function POST(request: Request) {
       );
     }
     throw error;
-  }
-
-  const outcome = await getReviewBackend().submit({ ...candidate, externalId: row.id });
-
-  if (outcome.status === "rejected") return invalid(outcome.field ?? "body", outcome.message);
-  if (outcome.status === "already_queued") {
-    return NextResponse.json({ error: "already_queued" }, { status: 409 });
-  }
-  if (outcome.status === "unavailable") {
-    return NextResponse.json({ error: "unavailable", message: outcome.message }, { status: 503 });
   }
 
   await db

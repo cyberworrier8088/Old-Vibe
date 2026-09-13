@@ -96,7 +96,7 @@ export function ItemsAdmin({ items }: { items: Item[] }) {
           />
         </label>
         <label className={styles.half}>
-          <span className={styles.label}>cost in beans</span>
+          <span className={styles.label}>cost in paper</span>
           <input
             className={styles.input}
             inputMode="numeric"
@@ -189,7 +189,7 @@ export function ItemsAdmin({ items }: { items: Item[] }) {
                 <span className={styles.name}>
                   {item.name}
                   <span className={styles.meta}>
-                    {item.cost} beans · {item.stock === null ? "unlimited" : `${item.stock} left`}
+                    {item.cost} paper · {item.stock === null ? "unlimited" : `${item.stock} left`}
                     {item.hidden ? " · hidden" : ""}
                   </span>
                 </span>

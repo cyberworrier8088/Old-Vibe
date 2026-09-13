@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "already_queued" }, { status: 409 });
       }
 
-      await db.update(projects).set(values).where(eq(projects.id, body.id));
+      await db.update(projects).set(values).where(and(eq(projects.id, body.id), eq(projects.userSub, user.sub)));
       return NextResponse.json({ ok: true, id: body.id });
     }
 

@@ -1,6 +1,5 @@
 import { desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app/AppShell";
@@ -10,6 +9,7 @@ import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { OrderStatusWord } from "@/components/ui/StatusWord";
 import { getCurrentUser } from "@/lib/auth/users";
 import { balanceFor } from "@/lib/beans";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { getDb } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { orderStatusOf } from "@/lib/projects/status";
@@ -25,7 +25,7 @@ export default async function OrdersPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=%2Fdash%2Forders");
 
-  const [balance, mine] = await Promise.all([
+  const [balances, mine] = await Promise.all([
     balanceFor(user.sub),
     getDb()
       .select()
@@ -38,17 +38,18 @@ export default async function OrdersPage() {
     <AppShell
       title="your orders"
       action={
-        <span className={styles.balance}>
-          <Image
-            src="/assets/beans.png"
-            alt=""
-            width={20}
-            height={20}
-            className="pixel"
-            unoptimized
-          />
-          {balance} beans
-        </span>
+        <div className={styles.balances}>
+          <span className={styles.balance}>
+            <PaperIcon size={20} />
+            {" "}{balances.paper} paper
+          </span>
+          {balances.gold > 0 ? (
+            <span className={styles.balance}>
+              <PaperIcon size={20} variant="gold" />
+              {" "}{balances.gold} gold paper
+            </span>
+          ) : null}
+        </div>
       }
     >
       {mine.length === 0 ? (
@@ -56,7 +57,7 @@ export default async function OrdersPage() {
           title="nothing claimed yet"
           action={<ButtonLink href="/shop">go to the shop</ButtonLink>}
         >
-          Approved hours turn into beans, and beans turn into real things.
+          Approved hours turn into paper, and paper turns into real things.
         </EmptyState>
       ) : (
         <Panel>
@@ -83,7 +84,7 @@ export default async function OrdersPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td>{order.cost}</td>
+                    <td>{order.cost} {order.costCurrency === "gold" ? "gold paper" : "paper"}</td>
                     <td>{WHEN.format(order.createdAt)}</td>
                     <td>
                       <OrderStatusWord status={orderStatusOf(order.status)} size="s" />

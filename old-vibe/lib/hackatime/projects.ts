@@ -38,9 +38,14 @@ export async function getPickerProjects(
   }
 
   try {
+    const cutoffDate = new Date("2026-09-11T00:00:00Z");
     const { projects } = await getHackatimeProjects(token);
     const mapped = projects
-      .filter((project) => project.name && project.total_seconds > 0)
+      .filter((project) => {
+        if (!project.name || project.total_seconds <= 0) return false;
+        if (project.created_at && new Date(project.created_at) > cutoffDate) return false;
+        return true;
+      })
       .sort((a, b) => b.total_seconds - a.total_seconds)
       .map((project) => ({
         key: project.name,

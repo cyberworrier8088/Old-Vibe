@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { hoursLabel } from "@/lib/beans";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
@@ -89,7 +90,11 @@ export default async function MakersPage({
                   <th>hackatime</th>
                   <th>sent</th>
                   <th>hours</th>
-                  <th>beans</th>
+                  <th>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      paper <PaperIcon size={14} />
+                    </span>
+                  </th>
                   <th>orders</th>
                 </tr>
               </thead>

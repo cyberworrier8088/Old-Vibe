@@ -11,17 +11,20 @@ import { Timeline } from "@/components/ui/Timeline";
 import type { TimelineStep } from "@/components/ui/Timeline";
 import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
+import { projects, projectJournals } from "@/lib/db/schema";
 import type { Project } from "@/lib/db/schema";
 import { livePhaseStatus } from "@/lib/ari/status";
 import { missingForGrant } from "@/lib/grant";
 import { isOpen, projectStatus } from "@/lib/projects/status";
 import { getPickerProjects } from "@/lib/hackatime/projects";
 import { reviewIsExternal } from "@/lib/review";
+import { PaperIcon } from "@/components/ui/PaperIcon";
 import { beansForMinutes, hoursLabel } from "@/lib/beans";
 
 import { ResendForm } from "./ResendForm";
 import { WithdrawButton } from "./WithdrawButton";
+import { JournalSection } from "./JournalSection";
+import { SubmitForm } from "../../new/SubmitForm";
 
 import styles from "./page.module.css";
 
@@ -82,15 +85,23 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   if (!project) notFound();
 
+  const journals = await getDb()
+    .select()
+    .from(projectJournals)
+    .where(eq(projectJournals.projectId, id));
+  // Sort them so oldest is first or newest is first. Let's do newest first.
+  journals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
   const stored = projectStatus(project);
   const live = isOpen(project) && reviewIsExternal() ? await livePhaseStatus(project.id) : null;
   const status = live ?? stored;
   const hours = hoursLabel(project.approvedMinutes);
+  const isDraft = !project.submittedAt;
   const resendable =
     project.decision === "changes" ||
     project.decision === "rejected" ||
     project.decision === "withdrawn";
-  const options = resendable ? ((await getPickerProjects(user)) ?? []) : [];
+  const options = resendable || isDraft ? ((await getPickerProjects(user)) ?? []) : [];
   const missing = project.decision === "approved" ? missingForGrant(user) : [];
 
   return (
@@ -154,8 +165,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     <span className="tabular">{hours}h</span>
                   </div>
                   <div className={styles.fact}>
-                    <span>beans</span>
-                    <span className="tabular">{beansForMinutes(project.approvedMinutes)}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      paper <PaperIcon size={14} />
+                    </span>
+                    <span className="tabular">{beansForMinutes(project.approvedMinutes, user.streak)}</span>
                   </div>
                 </>
               ) : null}
@@ -171,6 +184,23 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           ) : null}
         </div>
       </div>
+
+      <JournalSection projectId={project.id} journals={journals} isDraft={isDraft} />
+
+      {isDraft ? (
+        <SubmitForm
+          projects={options}
+          draft={{
+            id: project.id,
+            title: project.title,
+            description: project.description ?? "",
+            repoUrl: project.repoUrl ?? "",
+            demoUrl: project.demoUrl ?? "",
+            thumbnailUrl: project.thumbnailUrl ?? "",
+            hackatimeProjects: project.hackatimeProjects,
+          }}
+        />
+      ) : null}
 
       {resendable ? (
         <ResendForm

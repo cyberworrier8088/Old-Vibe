@@ -51,7 +51,7 @@ export default async function LoginPage({
           <h1 className={styles.title}>let us in, night owl</h1>
           <p className={styles.body}>
             You sign in with your Hack Club account. It is how we know your hours are yours, and
-            where to send your beans.
+            where to send your paper.
           </p>
           {error ? (
             <div className={styles.full}>

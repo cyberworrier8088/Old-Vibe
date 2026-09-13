@@ -1,3 +1,9 @@
+.balances {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .balance {
   display: inline-flex;
   align-items: center;

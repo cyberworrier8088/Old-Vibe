@@ -126,7 +126,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       approvedMinutes: null,
       decidedAt: null,
     })
-    .where(eq(projects.id, project.id));
+    .where(and(eq(projects.id, project.id), eq(projects.userSub, user.sub)));
 
   return NextResponse.json({ ok: true, id: project.id, status: "queued" });
 }

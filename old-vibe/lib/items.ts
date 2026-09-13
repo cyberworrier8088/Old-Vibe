@@ -6,6 +6,7 @@ export type ItemInput = {
   stock?: number | null;
   hidden?: boolean;
   position?: number;
+  currency?: "paper" | "gold";
 };
 
 export type ItemProblem = { field: string; message: string };
@@ -29,6 +30,10 @@ export function validateItem(input: ItemInput, requireName = true): ItemProblem 
     }
   }
 
+  if (input.currency !== undefined && input.currency !== "paper" && input.currency !== "gold") {
+    return { field: "currency", message: "Currency must be either paper or gold." };
+  }
+
   return null;
 }
 
@@ -41,5 +46,6 @@ export function cleanItem(input: ItemInput) {
     ...(input.stock !== undefined ? { stock: input.stock } : {}),
     ...(input.hidden !== undefined ? { hidden: input.hidden } : {}),
     ...(input.position !== undefined ? { position: input.position } : {}),
+    ...(input.currency !== undefined ? { currency: input.currency } : {}),
   };
 }
