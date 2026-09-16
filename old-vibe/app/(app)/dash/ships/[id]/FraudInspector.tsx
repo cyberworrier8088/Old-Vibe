@@ -34,17 +34,54 @@ const AI_PATH_INDICATORS = [
   "walkthrough.md",
   "implementation_plan.md",
   ".claude",
+  ".cursorrules",
+  ".windsurfrules",
+  ".specstory",
+  "copilot-instructions.md",
+  "copilot-chat",
+  "chat.json",
+  ".aider",
 ];
+
+const NOISE_PATH_PATTERNS = [
+  "node_modules",
+  "/vendor/",
+  "\\vendor\\",
+  "/.git/",
+  "\\.git\\",
+  "/target/",
+  "\\target\\",
+  "/dist/",
+  "\\dist\\",
+  "/build/",
+  "\\build\\",
+  "appdata/local/temp",
+  "/tmp/",
+  "\\tmp\\",
+  "package-lock.json",
+  "cargo.lock",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+];
+
+function isHeartbeatNoise(hb: HackatimeHeartbeat): boolean {
+  if (!hb.entity) return false;
+  const ent = hb.entity.toLowerCase();
+  return NOISE_PATH_PATTERNS.some((p) => ent.includes(p));
+}
 
 function isHeartbeatAi(hb: HackatimeHeartbeat): boolean {
   const cat = (hb.category ?? "").toLowerCase();
   const ed = (hb.editor ?? "").toLowerCase();
   const ent = (hb.entity ?? "").toLowerCase();
 
-  if (cat.includes("ai") || cat.includes("copilot")) return true;
-  for (const a of AI_EDITORS) {
-    // We don't automatically flag just for using the editor, since they can type manually.
-    // The category 'ai' or 'copilot' will catch actual AI generations.
+  if (
+    cat.includes("ai") ||
+    cat.includes("copilot") ||
+    cat.includes("chat") ||
+    cat.includes("completion")
+  ) {
+    return true;
   }
   for (const p of AI_PATH_INDICATORS) {
     if (ent.includes(p)) return true;
@@ -94,11 +131,35 @@ export function FraudInspector({
   const [searchQuery, setSearchQuery] = useState("");
   const [writeOnly, setWriteOnly] = useState(false);
   const [aiOnly, setAiOnly] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<
+    "ALL" | "FLAGGED" | "AI" | "SPIKE" | "NOISE" | "WRITES"
+  >("ALL");
   const [selectedFileFilter, setSelectedFileFilter] = useState<string | null>(null);
   const [expandedHeartbeatId, setExpandedHeartbeatId] = useState<string | null>(null);
   const [showAllMakerDownloads, setShowAllMakerDownloads] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState<number>(25);
+
+  const filterCounts = useMemo(() => {
+    let ai = 0;
+    let noise = 0;
+    let spikes = 0;
+    let writes = 0;
+    for (const h of heartbeats) {
+      if (isHeartbeatAi(h)) ai++;
+      if (isHeartbeatNoise(h)) noise++;
+      if (typeof h.lines === "number" && h.lines >= 350) spikes++;
+      if (h.is_write) writes++;
+    }
+    return {
+      all: heartbeats.length,
+      flagged: ai + noise + spikes,
+      ai,
+      noise,
+      spikes,
+      writes,
+    };
+  }, [heartbeats]);
 
   const filteredHeartbeats = useMemo(() => {
     return heartbeats.filter((hb) => {
@@ -115,6 +176,26 @@ export function FraudInspector({
         return false;
       }
       if (selectedFileFilter && hb.entity !== selectedFileFilter) {
+        return false;
+      }
+      if (quickFilter === "AI" && !isHeartbeatAi(hb)) {
+        return false;
+      }
+      if (quickFilter === "WRITES" && !hb.is_write) {
+        return false;
+      }
+      if (quickFilter === "NOISE" && !isHeartbeatNoise(hb)) {
+        return false;
+      }
+      if (quickFilter === "SPIKE" && (!hb.lines || hb.lines < 350)) {
+        return false;
+      }
+      if (
+        quickFilter === "FLAGGED" &&
+        !isHeartbeatAi(hb) &&
+        !isHeartbeatNoise(hb) &&
+        (!hb.lines || hb.lines < 350)
+      ) {
         return false;
       }
       if (searchQuery.trim()) {
@@ -134,7 +215,7 @@ export function FraudInspector({
       }
       return true;
     });
-  }, [heartbeats, projectFilter, writeOnly, aiOnly, selectedFileFilter, searchQuery]);
+  }, [heartbeats, projectFilter, writeOnly, aiOnly, selectedFileFilter, searchQuery, quickFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredHeartbeats.length / pageSize));
   const pageItems = filteredHeartbeats.slice((page - 1) * pageSize, page * pageSize);
@@ -224,6 +305,100 @@ export function FraudInspector({
           ) : null}
         </div>
       </div>
+
+      {/* Reviewer Authenticity & Decision Deck */}
+      {fraudAnalysis ? (
+        <div
+          className={[
+            styles.reviewerVerdictCard,
+            fraudAnalysis.recommendedDecision === "APPROVE"
+              ? styles.verdictApprove
+              : fraudAnalysis.recommendedDecision === "REJECT"
+                ? styles.verdictReject
+                : styles.verdictScrutinize,
+          ].join(" ")}
+        >
+          <div className={styles.verdictHeader}>
+            <div className={styles.verdictTitleBlock}>
+              <span className={styles.verdictBadge}>
+                {fraudAnalysis.recommendedDecision === "APPROVE"
+                  ? "RECOMMENDED: APPROVE"
+                  : fraudAnalysis.recommendedDecision === "REJECT"
+                    ? "RECOMMENDED: REJECT / SUSPECT"
+                    : "RECOMMENDED: MANUAL SCRUTINY"}
+              </span>
+              <span className={styles.verdictScoreLabel}>
+                Authenticity Score: <strong>{fraudAnalysis.authenticityScore}/100</strong>
+              </span>
+            </div>
+            <div className={styles.authenticityTrack}>
+              <div
+                className={styles.authenticityBar}
+                style={{
+                  width: `${fraudAnalysis.authenticityScore}%`,
+                  background:
+                    fraudAnalysis.authenticityScore >= 80
+                      ? "#2ecc71"
+                      : fraudAnalysis.authenticityScore >= 50
+                        ? "#f1c40f"
+                        : "#e74c3c",
+                }}
+              />
+            </div>
+          </div>
+          {fraudAnalysis.decisionReasons && fraudAnalysis.decisionReasons.length > 0 ? (
+            <div className={styles.verdictReasonsList}>
+              {fraudAnalysis.decisionReasons.map((r, i) => (
+                <span key={i} className={styles.verdictReasonPill}>
+                  • {r}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Double Dipping Net Deduction Assistant */}
+      {fraudAnalysis && fraudAnalysis.doubleDippingMinutes > 0 ? (
+        <div className={styles.deductionCard}>
+          <div className={styles.deductionHeader}>
+            <div className={styles.deductionTitleGroup}>
+              <span className={styles.deductionIcon}>⚠️</span>
+              <div>
+                <h4 className={styles.deductionTitle}>Double Dipping Deduction Assistant</h4>
+                <p className={styles.deductionSubtitle}>
+                  Maker logged concurrent activity on external project(s):{" "}
+                  <strong>{fraudAnalysis.doubleDippingProjects.join(", ")}</strong>.
+                </p>
+              </div>
+            </div>
+            <div className={styles.deductionActionGroup}>
+              <div className={styles.deductionStat}>
+                <span className={styles.deductionStatLabel}>Contested Overlap:</span>
+                <span className={styles.deductionStatVal}>
+                  -{Math.round((fraudAnalysis.doubleDippingMinutes / 60) * 10) / 10}h ({fraudAnalysis.doubleDippingMinutes}m)
+                </span>
+              </div>
+              <div className={styles.deductionStatHighlight}>
+                <span className={styles.deductionStatLabel}>Suggested Clean Hours:</span>
+                <span className={styles.deductionStatValHighlight}>
+                  {fraudAnalysis.cleanEstimatedHours}h
+                </span>
+              </div>
+            </div>
+          </div>
+          {fraudAnalysis.doubleDippingDetails && fraudAnalysis.doubleDippingDetails.length > 0 ? (
+            <div className={styles.deductionExamples}>
+              <span className={styles.deductionExamplesTitle}>Concurrent Timestamps Detected:</span>
+              {fraudAnalysis.doubleDippingDetails.slice(0, 4).map((ex, idx) => (
+                <div key={idx} className={styles.deductionExampleItem}>
+                  <code>{ex}</code>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Sibling Projects / Double Dipping Card */}
       {siblingProjects && siblingProjects.length > 0 ? (
@@ -402,6 +577,35 @@ export function FraudInspector({
           </span>
           <span className={styles.statTileSub2}>
             Max continuous: {fraudAnalysis?.maxContinuousHours ?? 0}h
+          </span>
+        </div>
+
+        <div className={styles.statTile}>
+          <span className={styles.statTileLabel}>24h Active Rhythm</span>
+          <span className={styles.statTileVal}>
+            {fraudAnalysis?.activeHoursCount ?? 0}/24
+            <span className={styles.statTileSub}>hrs active</span>
+          </span>
+          <span
+            className={styles.statTileSub2}
+            style={{
+              color: fraudAnalysis?.isZombieCodingSuspicious ? "#e74c3c" : "inherit",
+            }}
+          >
+            {fraudAnalysis?.isZombieCodingSuspicious
+              ? "Zombie bot (24/7)"
+              : "Healthy sleep rhythm"}
+          </span>
+        </div>
+
+        <div className={styles.statTile}>
+          <span className={styles.statTileLabel}>Source Depth / Lines</span>
+          <span className={styles.statTileVal}>
+            {100 - (fraudAnalysis?.noiseEntityRatio ?? 0)}%
+            <span className={styles.statTileSub}>source</span>
+          </span>
+          <span className={styles.statTileSub2}>
+            {fraudAnalysis?.suspiciousLineJumpsCount ?? 0} spikes · Max {fraudAnalysis?.maxLineJump ?? 0} lines
           </span>
         </div>
       </div>
@@ -628,22 +832,139 @@ export function FraudInspector({
           </div>
         ) : null}
 
+        {/* Quick Filter Toolbar */}
+        <div className={styles.quickFilterToolbar}>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "ALL" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("ALL");
+              setPage(1);
+            }}
+          >
+            All ({filterCounts.all})
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "FLAGGED" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("FLAGGED");
+              setPage(1);
+            }}
+            style={{ color: filterCounts.flagged > 0 ? "#e74c3c" : "inherit" }}
+          >
+            Flagged Only ({filterCounts.flagged})
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "AI" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("AI");
+              setPage(1);
+            }}
+            style={{ color: filterCounts.ai > 0 ? "#e74c3c" : "inherit" }}
+          >
+            AI Traces ({filterCounts.ai})
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "SPIKE" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("SPIKE");
+              setPage(1);
+            }}
+            style={{ color: filterCounts.spikes > 0 ? "#f39c12" : "inherit" }}
+          >
+            Line Spikes ({filterCounts.spikes})
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "NOISE" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("NOISE");
+              setPage(1);
+            }}
+          >
+            Noise/Temp ({filterCounts.noise})
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.quickFilterBtn,
+              quickFilter === "WRITES" ? styles.quickFilterBtnActive : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => {
+              setQuickFilter("WRITES");
+              setPage(1);
+            }}
+          >
+            Writes ({filterCounts.writes})
+          </button>
+
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 10.5, color: "var(--muted)", fontFamily: "var(--data)" }}>
+              Page Size:
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className={styles.pageSizeSelect}
+            >
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+            </select>
+          </div>
+        </div>
+
         {pageItems.length === 0 ? (
           <div className={styles.emptyStream}>
             <p>
               No heartbeats found matching current filters (
-              {aiOnly
-                ? "AI only"
-                : selectedFileFilter
-                  ? `file: ${selectedFileFilter}`
-                  : writeOnly
-                    ? "writes only"
-                    : searchQuery
-                      ? `query: "${searchQuery}"`
-                      : claimedProjects.join(", ") || "this project"}
+              {quickFilter !== "ALL"
+                ? `filter: ${quickFilter}`
+                : aiOnly
+                  ? "AI only"
+                  : selectedFileFilter
+                    ? `file: ${selectedFileFilter}`
+                    : writeOnly
+                      ? "writes only"
+                      : searchQuery
+                        ? `query: "${searchQuery}"`
+                        : claimedProjects.join(", ") || "this project"}
               ).
             </p>
-            {selectedFileFilter || writeOnly || aiOnly || searchQuery ? (
+            {selectedFileFilter || writeOnly || aiOnly || searchQuery || quickFilter !== "ALL" ? (
               <button
                 type="button"
                 onClick={() => {
@@ -651,6 +972,7 @@ export function FraudInspector({
                   setWriteOnly(false);
                   setAiOnly(false);
                   setSearchQuery("");
+                  setQuickFilter("ALL");
                 }}
                 className={styles.clearFilterBtn}
                 style={{ marginTop: 8 }}
@@ -667,7 +989,8 @@ export function FraudInspector({
                   <th>TIME</th>
                   <th>PROJECT</th>
                   <th>FILE / ENTITY</th>
-                  <th>WRITE</th>
+                  <th>STATUS</th>
+                  <th>LINES</th>
                   <th>AI / CAT</th>
                   <th>LANGUAGE</th>
                   <th>EDITOR & OS</th>
@@ -679,6 +1002,8 @@ export function FraudInspector({
                   const rowId = hb.id ? String(hb.id) : `${hb.time}-${idx}`;
                   const isExpanded = expandedHeartbeatId === rowId;
                   const isAi = isHeartbeatAi(hb);
+                  const isNoise = isHeartbeatNoise(hb);
+                  const isSpike = typeof hb.lines === "number" && hb.lines >= 350;
                   const entity = hb.entity ?? "—";
                   const filename = entity.includes("/")
                     ? entity.split("/").pop()
@@ -712,11 +1037,24 @@ export function FraudInspector({
                         >
                           {hb.is_write ? "WRITE" : "READ"}
                         </span>
+                        {isNoise ? (
+                          <span className={styles.tagNoise} style={{ marginLeft: 4 }}>
+                            NOISE
+                          </span>
+                        ) : null}
+                        {isSpike ? (
+                          <span className={styles.tagSpike} style={{ marginLeft: 4 }}>
+                            SPIKE
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className={styles.tdLang}>
+                        {typeof hb.lines === "number" ? `${hb.lines} lines` : "—"}
                       </td>
                       <td className={styles.tdCat}>
                         {isAi ? (
                           <span className={styles.tagAi}>
-                          AI ({hb.category || "ai"})
+                            AI ({hb.category || "ai"})
                           </span>
                         ) : (
                           <span className={styles.tagNormal}>

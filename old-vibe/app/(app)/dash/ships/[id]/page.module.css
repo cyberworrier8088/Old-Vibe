@@ -2097,6 +2097,292 @@
   max-height: 240px;
   overflow-y: auto;
   background: transparent;
+/* Reviewer Decision & Authenticity Deck */
+.reviewerVerdictCard {
+  background: var(--night);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verdictApprove {
+  border-left: 4px solid #2ecc71;
+  background: linear-gradient(90deg, rgba(46, 204, 113, 0.06), var(--night));
+}
+
+.verdictScrutinize {
+  border-left: 4px solid #f1c40f;
+  background: linear-gradient(90deg, rgba(241, 196, 15, 0.06), var(--night));
+}
+
+.verdictReject {
+  border-left: 4px solid #e74c3c;
+  background: linear-gradient(90deg, rgba(231, 76, 60, 0.08), var(--night));
+}
+
+.verdictHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.verdictTitleBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.verdictBadge {
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.verdictApprove .verdictBadge {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.verdictScrutinize .verdictBadge {
+  background: rgba(241, 196, 15, 0.2);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+}
+
+.verdictReject .verdictBadge {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.verdictScoreLabel {
+  font-family: var(--data);
+  font-size: 13px;
+  color: var(--soft);
+}
+
+.verdictScoreLabel strong {
+  color: var(--cream);
+  font-size: 15px;
+}
+
+.authenticityTrack {
+  width: 140px;
+  height: 8px;
+  background: var(--raised);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.authenticityBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.verdictReasonsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.verdictReasonPill {
+  font-family: var(--data);
+  font-size: 11.5px;
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+/* Double Dipping Deduction Assistant */
+.deductionCard {
+  background: rgba(245, 166, 35, 0.05);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-left: 4px solid var(--warn);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deductionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.deductionTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deductionIcon {
+  font-size: 20px;
+}
+
+.deductionTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.deductionSubtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.deductionActionGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.deductionStat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.deductionStatLabel {
+  font-family: var(--data);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.deductionStatVal {
+  font-family: var(--data);
+  font-size: 15px;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
+.deductionStatHighlight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: rgba(46, 204, 113, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(46, 204, 113, 0.25);
+}
+
+.deductionStatValHighlight {
+  font-family: var(--data);
+  font-size: 16px;
+  font-weight: 800;
+  color: #2ecc71;
+}
+
+.deductionExamples {
+  background: #0d0d0d;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deductionExamplesTitle {
+  font-family: var(--data);
+  font-size: 10.5px;
+  color: var(--lamp);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.deductionExampleItem {
+  font-family: var(--data);
+  font-size: 11px;
+  color: var(--soft);
+}
+
+/* Quick Filter Toolbar */
+.quickFilterToolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #080808;
+  border-bottom: 1px solid var(--rule);
+}
+
+.quickFilterBtn {
+  background: var(--night);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  font-family: var(--data);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quickFilterBtn:hover {
+  background: var(--raised);
+  color: var(--cream);
+  border-color: var(--rule);
+}
+
+.quickFilterBtnActive {
+  background: rgba(247, 233, 168, 0.15);
+  border-color: var(--lamp);
+  color: var(--lamp);
+  font-weight: 700;
+}
+
+.tagSpike {
+  font-family: var(--data);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(243, 156, 18, 0.2);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.4);
+}
+
+.tagNoise {
+  font-family: var(--data);
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(149, 165, 166, 0.2);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.4);
+}
+
+.pageSizeSelect {
+  background: var(--night);
+  border: 1px solid var(--edge);
+  color: var(--soft);
+  font-family: var(--data);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 /* Mobile Responsiveness */
