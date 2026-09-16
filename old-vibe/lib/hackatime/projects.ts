@@ -504,12 +504,12 @@ export async function getMakerProjectBreakdown(
           validIntervals.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
           validIntervals.length;
         intervalStdDevSeconds = Math.round(Math.sqrt(variance) * 10) / 10;
-        if (intervalStdDevSeconds < 3.5 && validIntervals.length > 25) {
+        if (intervalStdDevSeconds < 2.0 && validIntervals.length > 50) {
           isFixedIntervalSuspicious = true;
         }
       }
 
-      if (burstCount > 20 && burstCount / validIntervals.length > 0.35) {
+      if (burstCount > 50 && burstCount / validIntervals.length > 0.50) {
         burstWarning = true;
       }
     }
@@ -603,8 +603,8 @@ export async function getMakerProjectBreakdown(
     const maxContinuousHours = Math.round((maxSessionMinutes / 60) * 10) / 10;
     const isContinuousCodingSuspicious = maxContinuousHours > 14;
 
-    const singleFileAnomaly = (topEntity?.percentage ?? 0) > 85 && rawHeartbeats.length > 40;
-    const idleBloatAnomaly = writeRatio < 15 && rawHeartbeats.length > 35;
+    const singleFileAnomaly = (topEntity?.percentage ?? 0) > 95 && rawHeartbeats.length > 100;
+    const idleBloatAnomaly = writeRatio < 5 && rawHeartbeats.length > 50;
     const trustLvl = profile?.trust_factor?.trust_level;
 
     // Risk Score calculation - AI usage is the #1 critical risk in Old Vibe
@@ -646,9 +646,10 @@ export async function getMakerProjectBreakdown(
             if (ohb.project) {
               doubleDippingCount++;
               doubleDippingProjectsSet.add(ohb.project);
-              const dtStr = new Date((ohb.time as number) * 1000).toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+              const dtStrClaimed = new Date((hb.time as number) * 1000).toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+              const dtStrOther = new Date((ohb.time as number) * 1000).toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
               if (overlappingDetails.length < 5) {
-                overlappingDetails.push(`[${dtStr}] ${ohb.project}`);
+                overlappingDetails.push(`Claimed ${hb.project} [${dtStrClaimed}] overlapped ${ohb.project} [${dtStrOther}]`);
               }
             }
           }
