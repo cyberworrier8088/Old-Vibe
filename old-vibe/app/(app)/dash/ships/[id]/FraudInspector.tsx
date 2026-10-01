@@ -6,22 +6,6 @@ import type { FraudAnalysis } from "@/lib/hackatime/projects";
 import type { SiblingProject } from "./ReviewTabs";
 import styles from "./page.module.css";
 
-const AI_EDITORS = [
-  "antigravity",
-  "antigravity-ide",
-  "antigravityide",
-  "antigravity-desktop",
-  "cursor",
-  "windsurf",
-  "copilot",
-  "cline",
-  "continue",
-  "aider",
-  "devin",
-  "zed-ai",
-  "v0",
-];
-
 const AI_PATH_INDICATORS = [
   "antigravity ide",
   ".gemini",
@@ -72,7 +56,6 @@ function isHeartbeatNoise(hb: HackatimeHeartbeat): boolean {
 
 function isHeartbeatAi(hb: HackatimeHeartbeat): boolean {
   const cat = (hb.category ?? "").toLowerCase();
-  const ed = (hb.editor ?? "").toLowerCase();
   const ent = (hb.entity ?? "").toLowerCase();
 
   if (
@@ -338,10 +321,10 @@ export function FraudInspector({
                   width: `${fraudAnalysis.authenticityScore}%`,
                   background:
                     fraudAnalysis.authenticityScore >= 80
-                      ? "#2ecc71"
+                      ? "var(--ok)"
                       : fraudAnalysis.authenticityScore >= 50
-                        ? "#f1c40f"
-                        : "#e74c3c",
+                        ? "var(--warn)"
+                        : "var(--bad)",
                 }}
               />
             </div>
@@ -474,10 +457,10 @@ export function FraudInspector({
 
             <div className={styles.aiRatioMeter}>
               <div className={styles.aiMeterLabels}>
-                <span style={{ color: "#2ecc71" }}>
+                <span style={{ color: "var(--ok)" }}>
                   Handcrafted: {aiAudit.handcraftedPercentage}%
                 </span>
-                <span style={{ color: aiAudit.aiPercentage > 0 ? "#e74c3c" : "var(--muted)" }}>
+                <span style={{ color: aiAudit.aiPercentage > 0 ? "var(--bad)" : "var(--lilac)" }}>
                   AI Coded: {aiAudit.aiPercentage}%
                 </span>
               </div>
@@ -521,7 +504,7 @@ export function FraudInspector({
           <span
             className={styles.statTileVal}
             style={{
-              color: (aiAudit?.aiPercentage ?? 0) > 0 ? "#e74c3c" : "#2ecc71",
+              color: (aiAudit?.aiPercentage ?? 0) > 0 ? "var(--bad)" : "var(--ok)",
             }}
           >
             {aiAudit?.aiPercentage ?? 0}%
@@ -550,7 +533,7 @@ export function FraudInspector({
                 background:
                   (fraudAnalysis?.writeRatio ?? 0) < 20
                     ? "var(--bad)"
-                    : "var(--highlight)",
+                    : "var(--ok)",
               }}
             />
           </div>
@@ -589,7 +572,7 @@ export function FraudInspector({
           <span
             className={styles.statTileSub2}
             style={{
-              color: fraudAnalysis?.isZombieCodingSuspicious ? "#e74c3c" : "inherit",
+              color: fraudAnalysis?.isZombieCodingSuspicious ? "var(--bad)" : "inherit",
             }}
           >
             {fraudAnalysis?.isZombieCodingSuspicious
@@ -780,7 +763,7 @@ export function FraudInspector({
               <span>Writes only</span>
             </label>
 
-            <label className={styles.writeToggleLabel} style={{ color: "#e74c3c" }}>
+            <label className={styles.writeToggleLabel} style={{ color: "var(--bad)" }}>
               <input
                 type="checkbox"
                 checked={aiOnly}
@@ -861,7 +844,7 @@ export function FraudInspector({
               setQuickFilter("FLAGGED");
               setPage(1);
             }}
-            style={{ color: filterCounts.flagged > 0 ? "#e74c3c" : "inherit" }}
+            style={{ color: filterCounts.flagged > 0 ? "var(--bad)" : "inherit" }}
           >
             Flagged Only ({filterCounts.flagged})
           </button>
@@ -877,7 +860,7 @@ export function FraudInspector({
               setQuickFilter("AI");
               setPage(1);
             }}
-            style={{ color: filterCounts.ai > 0 ? "#e74c3c" : "inherit" }}
+            style={{ color: filterCounts.ai > 0 ? "var(--bad)" : "inherit" }}
           >
             AI Traces ({filterCounts.ai})
           </button>
@@ -893,7 +876,7 @@ export function FraudInspector({
               setQuickFilter("SPIKE");
               setPage(1);
             }}
-            style={{ color: filterCounts.spikes > 0 ? "#f39c12" : "inherit" }}
+            style={{ color: filterCounts.spikes > 0 ? "var(--warn)" : "inherit" }}
           >
             Line Spikes ({filterCounts.spikes})
           </button>
@@ -929,7 +912,7 @@ export function FraudInspector({
           </button>
 
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10.5, color: "var(--muted)", fontFamily: "var(--data)" }}>
+            <span style={{ fontSize: 10.5, color: "var(--lilac)", fontFamily: "var(--data)" }}>
               Page Size:
             </span>
             <select
@@ -1064,7 +1047,7 @@ export function FraudInspector({
                       </td>
                       <td className={styles.tdLang}>{hb.language || "—"}</td>
                       <td className={styles.tdEditor}>
-                        <span style={{ color: isAi ? "#e74c3c" : "inherit" }}>
+                        <span style={{ color: isAi ? "var(--bad)" : "inherit" }}>
                           {hb.editor || "—"}
                         </span>{" "}
                         · {hb.operating_system || "—"}

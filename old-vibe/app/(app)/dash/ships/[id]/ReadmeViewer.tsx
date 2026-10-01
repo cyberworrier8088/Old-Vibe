@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, use, useState } from "react";
 import styles from "./page.module.css";
 
 function renderMarkdown(md: string) {
@@ -78,17 +78,18 @@ function renderMarkdown(md: string) {
   return elements;
 }
 
-export function ReadmeViewer({
+type ReadmeViewerProps = {
+  repoUrl: string | null;
+  alternateRepoUrl?: string | null;
+  projectId: string;
+};
+
+function ReadmeViewerBody({
   initialReadme,
   repoUrl,
   alternateRepoUrl,
   projectId,
-}: {
-  initialReadme: string | null;
-  repoUrl: string | null;
-  alternateRepoUrl?: string | null;
-  projectId: string;
-}) {
+}: ReadmeViewerProps & { initialReadme: string | null }) {
   const [mode, setMode] = useState<"formatted" | "raw">("formatted");
   const [expanded, setExpanded] = useState(false);
   const [activeRepo, setActiveRepo] = useState(repoUrl);
@@ -220,5 +221,39 @@ export function ReadmeViewer({
         )}
       </div>
     </div>
+  );
+}
+
+function ReadmeResolved({ readme, ...rest }: ReadmeViewerProps & { readme: Promise<string | null> }) {
+  return <ReadmeViewerBody initialReadme={use(readme)} {...rest} />;
+}
+
+/**
+ * The README arrives as a promise the server started but did not wait for, so the rest of the
+ * review page is on screen while GitHub answers. This holds the layout in place until then.
+ */
+export function ReadmeViewer({
+  readme,
+  ...rest
+}: ReadmeViewerProps & { readme: Promise<string | null> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.readmeContainer}>
+          <div className={styles.readmeTopBar}>
+            <div className={styles.readmeHeaderLeft}>
+              <span className={styles.readmeSectionTitle}>[README & CODE REPOSITORY]</span>
+            </div>
+          </div>
+          <div className={styles.readmeCard}>
+            <div className={styles.readmeEmptyState} role="status">
+              Loading README...
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ReadmeResolved readme={readme} {...rest} />
+    </Suspense>
   );
 }

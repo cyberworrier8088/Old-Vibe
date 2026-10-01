@@ -11,7 +11,6 @@ import {
   getHackatimeProjects,
   getHackatimeStreak,
   getHackatimeSummaries,
-  getLatestHeartbeat,
   getHackatimeProjectDetails,
 } from "./client";
 import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
@@ -168,7 +167,7 @@ export async function getPickerProjects(
 
         if (projectTotals.size > 0) {
           const mapped: PickerProject[] = Array.from(projectTotals.entries())
-            .filter(([_, seconds]) => seconds > 0)
+            .filter(([, seconds]) => seconds > 0)
             .sort((a, b) => b[1] - a[1])
             .map(([name, seconds]) => ({
               key: name,
@@ -215,11 +214,56 @@ export async function getPickerProjects(
   }
 }
 
-export async function getMakerProjectBreakdown(
+const BREAKDOWN_TTL_MS = 60_000;
+const BREAKDOWN_CACHE_MAX = 50;
+const breakdowns = new Map<string, { at: number; result: Promise<ProjectAuditBreakdown> }>();
+
+/**
+ * Reviewers reload a ship repeatedly while deciding, and each audit costs several round trips to
+ * Hackatime, so a finished one is reused for a minute. Callers that arrive while one is being built
+ * share it. An audit that found no heartbeats is not kept: that is usually Hackatime failing
+ * rather than a maker with none, and the next load should try again.
+ */
+export function getMakerProjectBreakdown(
   user: Pick<User, "sub" | "hackatimeToken"> & { slackId?: string | null },
   claimedProjectNames: string[],
 ): Promise<ProjectAuditBreakdown> {
-  const allProjects = await getPickerProjects(user);
+  const key = [user.sub, ...claimedProjectNames.map((name) => name.trim().toLowerCase()).sort()].join(
+    "\0",
+  );
+  const hit = breakdowns.get(key);
+  if (hit && Date.now() - hit.at < BREAKDOWN_TTL_MS) return hit.result;
+
+  const entry = { at: Date.now(), result: buildMakerProjectBreakdown(user, claimedProjectNames) };
+  breakdowns.delete(key);
+  if (breakdowns.size >= BREAKDOWN_CACHE_MAX) {
+    const oldest = breakdowns.keys().next().value;
+    if (oldest !== undefined) breakdowns.delete(oldest);
+  }
+  breakdowns.set(key, entry);
+
+  entry.result.then(
+    (audit) => {
+      entry.at = Date.now();
+      if (!audit.totalHeartbeatsCount && breakdowns.get(key) === entry) breakdowns.delete(key);
+    },
+    () => {
+      if (breakdowns.get(key) === entry) breakdowns.delete(key);
+    },
+  );
+
+  return entry.result;
+}
+
+async function buildMakerProjectBreakdown(
+  user: Pick<User, "sub" | "hackatimeToken"> & { slackId?: string | null },
+  claimedProjectNames: string[],
+): Promise<ProjectAuditBreakdown> {
+  // Started now but awaited later: it does not depend on the audit calls below, so they overlap
+  // instead of queueing behind it. The empty catch only stops an early failure being reported as
+  // unhandled; it still throws where it is awaited.
+  const allProjectsRequest = getPickerProjects(user);
+  allProjectsRequest.catch(() => {});
 
   let profile: HackatimeProfile | null = null;
   let latestHeartbeat: HackatimeHeartbeat | null = null;
@@ -243,9 +287,8 @@ export async function getMakerProjectBreakdown(
         getHackatimeProjectDetails(token, username, name),
       );
 
-      const [pRes, hRes, sRes, rawProjectsRes, ...detailResults] = await Promise.allSettled([
+      const [pRes, sRes, rawProjectsRes, ...detailResults] = await Promise.allSettled([
         getHackatimeProfile(token),
-        getLatestHeartbeat(token),
         getHackatimeStreak(token),
         getHackatimeProjects(token),
         ...projectDetailPromises,
@@ -333,6 +376,8 @@ export async function getMakerProjectBreakdown(
       console.warn("[hackatime] extra audit data fetch failed:", err);
     }
   }
+
+  const allProjects = await allProjectsRequest;
 
   // Compute Fraud Analysis & AI Detection
   let fraudAnalysis: FraudAnalysis | undefined;

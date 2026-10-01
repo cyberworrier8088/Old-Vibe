@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { Project, ProjectJournal, User } from "@/lib/db/schema";
+import { Suspense, use, useState } from "react";
+import type { Project, ProjectJournal } from "@/lib/db/schema";
 import type { ProjectAuditBreakdown } from "@/lib/hackatime/projects";
 import { ReadmeViewer } from "./ReadmeViewer";
 import { FraudInspector } from "./FraudInspector";
@@ -24,9 +24,13 @@ export type SiblingProject = {
   submittedAt: Date | null;
 };
 
+/** The badge only appears once the README has arrived and turned out to exist. */
+function ReadmeBadge({ readme }: { readme: Promise<string | null> }) {
+  return use(readme) ? <span className={styles.tabBadge}>Verified</span> : null;
+}
+
 export function ReviewTabs({
   project,
-  maker: _maker,
   audit,
   readme,
   alternateRepoUrl,
@@ -36,9 +40,9 @@ export function ReviewTabs({
   siblingProjects = [],
 }: {
   project: Project;
-  maker?: User;
   audit: ProjectAuditBreakdown;
-  readme: string | null;
+  /** Started by the server and streamed in, so the page does not wait on GitHub. */
+  readme: Promise<string | null>;
   alternateRepoUrl: string | null;
   journals: ProjectJournal[];
   totalHoursDecimal: number;
@@ -61,7 +65,9 @@ export function ReviewTabs({
           onClick={() => setActiveTab("readme")}
         >
           <span>Overview and README</span>
-          {readme ? <span className={styles.tabBadge}>Verified</span> : null}
+          <Suspense fallback={null}>
+            <ReadmeBadge readme={readme} />
+          </Suspense>
         </button>
 
         <button
@@ -162,7 +168,7 @@ export function ReviewTabs({
           </div>
 
           <ReadmeViewer
-            initialReadme={readme}
+            readme={readme}
             repoUrl={project.repoUrl}
             alternateRepoUrl={alternateRepoUrl}
             projectId={project.id}
@@ -249,7 +255,7 @@ export function ReviewTabs({
                     ) : null}
                     <div
                       className={styles.auditItemNote}
-                      style={{ color: p.eligible ? "var(--muted)" : "var(--bad)" }}
+                      style={{ color: p.eligible ? "var(--lilac)" : "var(--bad)" }}
                     >
                       {p.note}
                     </div>

@@ -1,12 +1,11 @@
 import { getDb } from "../lib/db";
 import { beansLedger, orders, projectJournals, projects, users } from "../lib/db/schema";
-import { sql } from "drizzle-orm";
 
 async function main() {
   const db = getDb();
 
   // 1. Reset Paper / Beans (Clear ledger entries)
-  const deletedBeans = await db.delete(beansLedger);
+  await db.delete(beansLedger);
   console.log("Cleared beans_ledger (paper & gold reset to 0).");
 
   // 2. Clear any orders

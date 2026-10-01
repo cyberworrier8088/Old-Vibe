@@ -64,11 +64,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .from(projects)
     .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id)));
 
+  // The README starts loading now but is not awaited: it streams into its tab, so a slow GitHub
+  // never holds up the rest of the page. It cannot reject, which keeps `use()` below safe.
+  const readme = project.repoUrl ? fetchRepoReadmeContent(project.repoUrl) : Promise.resolve(null);
+
   // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
-  const [audit, readme] = await Promise.all([
-    getMakerProjectBreakdown(maker, project.hackatimeProjects),
-    project.repoUrl ? fetchRepoReadmeContent(project.repoUrl) : Promise.resolve(null),
-  ]);
+  const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
 
   const totalHoursDecimal =
     audit.totalDecimalHours > 0
@@ -183,7 +184,6 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         <div className={styles.leftColumn}>
           <ReviewTabs
             project={project}
-            maker={maker}
             audit={audit}
             readme={readme}
             alternateRepoUrl={alternateRepoUrl}
