@@ -44,7 +44,7 @@
 .control:focus {
   outline: none;
   border-color: var(--lamp);
-  box-shadow: 0 0 0 3px rgba(24, 21, 18, 0.08);
+  box-shadow: 0 0 0 3px rgb(var(--shadow-rgb) / 0.08);
 }
 
 .control[aria-invalid="true"] {

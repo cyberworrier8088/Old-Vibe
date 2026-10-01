@@ -76,6 +76,12 @@
   border-bottom: 1px solid var(--rule);
 }
 
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
 .title {
   display: inline-block;
   font-size: 26px;

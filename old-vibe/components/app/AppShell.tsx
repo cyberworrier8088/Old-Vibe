@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/users";
 import { APP_NAV, ORGANIZER_NAV } from "@/lib/nav";
 import type { NavItem } from "@/lib/nav";
 import { OldManFace } from "@/components/ui/OldManFace";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 import { NavLinks } from "./NavLinks";
 import styles from "./AppShell.module.css";
@@ -49,7 +50,10 @@ export async function AppShell({
         <main className={styles.main}>
           <div className={styles.top}>
             <h1 className={styles.title}>{title}</h1>
-            {action}
+            <div className={styles.topActions}>
+              <ThemeToggle />
+              {action}
+            </div>
           </div>
           {children}
         </main>

@@ -54,7 +54,7 @@
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--soft);
-  background: rgba(247, 233, 168, 0.06);
+  background: rgb(var(--warn-rgb) / 0.06);
   border-left: 2px solid var(--lamp);
   border-radius: 0 var(--radius-input) var(--radius-input) 0;
 }

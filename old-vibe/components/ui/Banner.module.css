@@ -5,7 +5,7 @@
   padding: 14px 16px;
   border: 1px solid currentColor;
   border-radius: var(--wobble-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(var(--ink-rgb) / 0.03);
 }
 
 .info {

@@ -5,7 +5,7 @@
   background-color: var(--night);
   background-image: radial-gradient(
     900px 520px at 72% -10%,
-    rgba(194, 65, 12, 0.07),
+    rgb(var(--orchid-rgb) / 0.07),
     transparent 62%
   );
 }

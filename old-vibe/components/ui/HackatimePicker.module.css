@@ -20,7 +20,7 @@
 }
 
 .search::placeholder {
-  color: #655c70;
+  color: var(--lilac);
 }
 
 .list {
@@ -51,7 +51,7 @@
 }
 
 .option[aria-pressed="true"] {
-  background: rgba(247, 233, 168, 0.07);
+  background: rgb(var(--warn-rgb) / 0.07);
   border-color: var(--lamp);
 }
 

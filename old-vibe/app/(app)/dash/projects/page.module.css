@@ -23,7 +23,7 @@
 .on {
   border-color: var(--lamp);
   color: var(--lamp);
-  background: rgba(247, 233, 168, 0.08);
+  background: rgb(var(--warn-rgb) / 0.08);
 }
 
 .list {

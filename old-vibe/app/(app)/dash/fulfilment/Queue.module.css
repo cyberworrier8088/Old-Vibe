@@ -18,7 +18,7 @@
 .on {
   border-color: var(--lamp);
   color: var(--lamp);
-  background: rgba(247, 233, 168, 0.08);
+  background: rgb(var(--warn-rgb) / 0.08);
 }
 
 .order {
@@ -68,7 +68,7 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--soft);
-  background: rgba(247, 233, 168, 0.06);
+  background: rgb(var(--warn-rgb) / 0.06);
   border-left: 2px solid var(--lamp);
   border-radius: 0 var(--radius-input) var(--radius-input) 0;
 }
@@ -93,14 +93,14 @@
 }
 
 .ready {
-  border-color: #78c88a !important;
-  color: #78c88a !important;
+  border-color: var(--ok) !important;
+  color: var(--ok) !important;
 }
 
 .ready:hover {
-  background: rgba(120, 200, 138, 0.12) !important;
-  border-color: #78c88a !important;
-  color: #9be0a8 !important;
+  background: rgb(var(--ok-rgb) / 0.12) !important;
+  border-color: var(--ok) !important;
+  color: var(--ok) !important;
 }
 
 .cancelBox {
@@ -108,8 +108,8 @@
   flex-direction: column;
   gap: var(--s2);
   padding: var(--s3);
-  background: rgba(227, 154, 160, 0.06);
-  border: 1px solid rgba(227, 154, 160, 0.25);
+  background: rgb(var(--bad-rgb) / 0.06);
+  border: 1px solid rgb(var(--bad-rgb) / 0.25);
   border-radius: var(--wobble-sm);
 }
 

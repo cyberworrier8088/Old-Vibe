@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ButtonLink } from "@/components/ui/Button";
 import { OldManFace } from "@/components/ui/OldManFace";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SITE_NAV } from "@/lib/nav";
 
 import styles from "./SiteNav.module.css";
@@ -23,6 +24,7 @@ export function SiteNav() {
           <ButtonLink href="/shop" variant="quiet">
             shop
           </ButtonLink>
+          <ThemeToggle />
           <ButtonLink href="/login" variant="primary">
             start building
           </ButtonLink>

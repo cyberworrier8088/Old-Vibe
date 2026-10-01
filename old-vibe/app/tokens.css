@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light;
+
   /* Canvas & Paper Backgrounds */
   --night: #fbf9f5;
   --surface: #ffffff;
@@ -31,6 +33,25 @@
   --blush: #fff7ed;
   --chalk: #e7dfd3;
   --lamp-bright: #292524;
+  --orchid-hover: #9a3412;
+  --selection: #ecd9bd;
+
+  /* The same colours as bare channels, for translucent washes: rgb(var(--ok-rgb) / 0.15). */
+  --page-rgb: 251 249 245;
+  --ink-rgb: 24 21 18;
+  --shadow-rgb: 24 21 18;
+  --lilac-rgb: 99 93 85;
+  --orchid-rgb: 194 65 12;
+  --ok-rgb: 21 128 61;
+  --warn-rgb: 180 83 9;
+  --bad-rgb: 185 28 28;
+  --info-rgb: 3 105 161;
+
+  /* Soft fills for success / error panels, and the dark code window in the review desk. */
+  --bad-bg: #fef2f2;
+  --bad-border: #fecaca;
+  --code-bg: #181512;
+  --code-fg: #e7dfd3;
 
   /* Feedback Colors */
   --ok: #15803d;
@@ -73,10 +94,69 @@
   --radius-pill: 999px;
 
   /* Clean Shadows */
-  --drop: 0 4px 12px rgba(24, 21, 18, 0.06), 0 1px 2px rgba(24, 21, 18, 0.04);
-  --drop-quiet: 0 1px 3px rgba(24, 21, 18, 0.05);
+  --drop: 0 4px 12px rgb(var(--shadow-rgb) / 0.06), 0 1px 2px rgb(var(--shadow-rgb) / 0.04);
+  --drop-quiet: 0 1px 3px rgb(var(--shadow-rgb) / 0.05);
   --tilt: 0deg;
 
   --measure: 68ch;
   --page: 780px;
+}
+
+/* Dark theme. A warm near-black so it sits with the paper palette instead of fighting it. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --night: #14120f;
+  --surface: #1c1915;
+  --raised: #26221c;
+  --rule: #332e26;
+  --edge: #453f35;
+  --glow: #5b5446;
+
+  --cream: #f3eee4;
+  --soft: #d8d1c4;
+  --lilac: #aca494;
+  --muted: #877f72;
+
+  --paper-green: #4ade80;
+  --paper-green-bg: #10261a;
+  --paper-green-border: #1f4d33;
+  --paper-green-glow: 0 0 16px rgba(74, 222, 128, 0.2);
+
+  --paper-gold: #fbbf24;
+  --paper-gold-bg: #2a2110;
+  --paper-gold-border: #55411a;
+  --paper-gold-glow: 0 0 16px rgba(251, 191, 36, 0.2);
+
+  --lamp: #f3eee4;
+  --on-lamp: #14120f;
+  --orchid: #fb923c;
+  --blush: #2b1c12;
+  --chalk: #3a342b;
+  --lamp-bright: #ffffff;
+  --orchid-hover: #fdba74;
+  --selection: #5a4526;
+
+  --page-rgb: 20 18 15;
+  --ink-rgb: 243 238 228;
+  --shadow-rgb: 0 0 0;
+  --lilac-rgb: 172 164 148;
+  --orchid-rgb: 251 146 60;
+  --ok-rgb: 74 222 128;
+  --warn-rgb: 251 191 36;
+  --bad-rgb: 248 113 113;
+  --info-rgb: 56 189 248;
+
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --info: #38bdf8;
+
+  --bad-bg: #2a1414;
+  --bad-border: #5a2626;
+  --code-bg: #0d0c0a;
+  --code-fg: #e7dfd3;
+
+  --drop: 0 6px 18px rgb(var(--shadow-rgb) / 0.45), 0 1px 3px rgb(var(--shadow-rgb) / 0.35);
+  --drop-quiet: 0 1px 4px rgb(var(--shadow-rgb) / 0.4);
 }

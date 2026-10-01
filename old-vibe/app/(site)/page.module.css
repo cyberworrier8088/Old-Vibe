@@ -12,6 +12,8 @@
   align-items: center;
   gap: 8px;
   align-self: flex-start;
+  flex-wrap: wrap;
+  row-gap: 2px;
   font-family: var(--data);
   font-size: 12px;
   font-weight: 600;
@@ -21,7 +23,11 @@
   background: var(--blush);
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(194, 65, 12, 0.2);
+  border: 1px solid rgb(var(--orchid-rgb) / 0.2);
+}
+
+.kicker span {
+  white-space: nowrap;
 }
 
 .heading {
@@ -68,7 +74,7 @@
 }
 
 .dealCardPaper {
-  background: linear-gradient(145deg, #ffffff, #f4fdf6);
+  background: linear-gradient(145deg, var(--surface), var(--paper-green-bg));
   border: 1px solid var(--paper-green-border);
 }
 
@@ -95,15 +101,15 @@
 }
 
 .dealTagShip {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background: var(--paper-gold-bg);
+  color: var(--paper-gold);
+  border: 1px solid var(--paper-gold-border);
 }
 
 .dealTagReward {
-  background: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: var(--paper-green-bg);
+  color: var(--paper-green);
+  border: 1px solid var(--paper-green-border);
 }
 
 .dealTitle {
@@ -231,7 +237,7 @@
   width: 380px;
   height: 380px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(194, 65, 12, 0.14), transparent 68%);
+  background: radial-gradient(circle, rgb(var(--orchid-rgb) / 0.14), transparent 68%);
   filter: blur(8px);
   animation: drift 14s ease-in-out infinite;
   pointer-events: none;
@@ -290,8 +296,8 @@
 }
 
 .ruleNo {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: var(--bad-bg);
+  border-color: var(--bad-border);
 }
 
 .ruleNo li::before {
