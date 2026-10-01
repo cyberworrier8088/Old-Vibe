@@ -3,7 +3,7 @@
 A Hack Club "You Ship, We Ship" program. Makers write software by hand, track their time with
 Hackatime, submit it, and earn Paper to spend in the Old Vibe shop.
 
-Maintained by @hridhaan-s (github)
+Maintained by @imu
 
 ## How it works
 
