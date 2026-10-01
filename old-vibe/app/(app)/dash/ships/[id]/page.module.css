@@ -2759,3 +2759,25 @@
   border: 1px solid var(--rule);
   border-radius: 4px;
 }
+
+.justification {
+  font-family: var(--data);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.nextLink {
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  color: var(--on-lamp);
+  background: var(--lamp);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+
+.nextLink:hover {
+  background: var(--soft);
+  color: var(--on-lamp);
+}

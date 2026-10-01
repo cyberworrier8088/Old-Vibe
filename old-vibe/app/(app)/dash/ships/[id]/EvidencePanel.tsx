@@ -6,7 +6,13 @@ import type { Evidence, Flag, TimelineEvent } from "@/lib/review/evidence";
 
 import styles from "./EvidencePanel.module.css";
 
-export type ReviewEvidence = { evidence: Evidence; events: TimelineEvent[]; flags: Flag[] };
+export type ReviewEvidence = {
+  evidence: Evidence;
+  events: TimelineEvent[];
+  flags: Flag[];
+  /** Evidence-based hour justification for the unified YSWS database, minus the decision line. */
+  justification: string;
+};
 
 const WHEN = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",

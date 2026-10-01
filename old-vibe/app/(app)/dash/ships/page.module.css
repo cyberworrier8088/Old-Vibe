@@ -170,3 +170,30 @@
   padding: 24px 0;
   text-align: center;
 }
+
+.queueHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+}
+
+.queueStat {
+  margin-left: auto;
+  font-family: var(--data);
+  font-size: 12px;
+  color: var(--lilac);
+}
+
+.wait_ok {
+  color: var(--ok);
+}
+
+.wait_warn {
+  color: var(--warn) !important;
+}
+
+.wait_bad {
+  color: var(--bad) !important;
+  font-weight: 700;
+}

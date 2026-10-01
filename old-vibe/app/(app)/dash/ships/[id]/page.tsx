@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import { saveStreak } from "@/lib/hackatime/streak";
 import { banStatus, formatBanEnd } from "@/lib/ladder";
 import { countViolations, historyFor } from "@/lib/moderation";
 import { buildTimeline, gatherEvidence } from "@/lib/review/evidence";
+import { buildJustification } from "@/lib/review/justification";
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { DecisionForm } from "./DecisionForm";
@@ -67,6 +68,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .from(projects)
     .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id)));
 
+  // The next submission in the queue (oldest first) that is not this one.
+  const [nextInQueue] = await getDb()
+    .select({ id: projects.id, title: projects.title })
+    .from(projects)
+    .where(and(isNotNull(projects.submittedAt), isNull(projects.decision), ne(projects.id, id)))
+    .orderBy(asc(projects.submittedAt))
+    .limit(1);
+
   const [violations, moderationLog] = await Promise.all([
     countViolations(maker.sub),
     historyFor(maker.sub),
@@ -86,17 +95,42 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
   const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
 
-  const review = evidence.then((found) => ({
-    evidence: found,
-    ...buildTimeline({
+  const review = evidence.then((found) => {
+    const timeline = buildTimeline({
       evidence: found,
       eventStart: EVENT_START_DATE,
       submittedAt: project.submittedAt ? project.submittedAt.toISOString() : null,
       firstHeartbeatAt: audit.firstHeartbeatAt ?? null,
       lastHeartbeatAt: audit.lastHeartbeatAt ?? null,
       makerGithub: audit.profile?.github_username ?? null,
-    }),
-  }));
+    });
+    const fraud = audit.fraudAnalysis;
+    const justification = buildJustification({
+      hackatimeProjects: project.hackatimeProjects,
+      trackedSeconds: audit.totalSeconds,
+      firstHeartbeatAt: audit.firstHeartbeatAt ?? null,
+      lastHeartbeatAt: audit.lastHeartbeatAt ?? null,
+      sessions: fraud?.sessionClusters.length ?? 0,
+      longestSessionHours: fraud?.maxContinuousHours ?? 0,
+      ai: fraud
+        ? {
+            basis: fraud.aiAudit.basis,
+            percentage: fraud.aiAudit.aiPercentage,
+            aiLines: fraud.aiAudit.aiLines,
+            humanLines: fraud.aiAudit.humanLines,
+          }
+        : null,
+      writeRatio: fraud ? fraud.writeRatio : null,
+      idleMinutes: fraud?.idleMinutes ?? 0,
+      pasteBursts: fraud?.pasteBurstCount ?? 0,
+      doubleDipMinutes: fraud?.doubleDippingMinutes ?? 0,
+      repo: found.repo,
+      priorShips: found.priorShips,
+      demo: found.demo,
+      flags: timeline.flags,
+    });
+    return { evidence: found, ...timeline, justification };
+  });
 
   const makerStreak =
     typeof audit.streakDays === "number"
@@ -155,6 +189,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             ← Back to Submissions Queue
           </Link>
           <div className={styles.headerStatusRow}>
+            {nextInQueue ? (
+              <Link href={`/dash/ships/${nextInQueue.id}`} className={styles.nextLink} title={nextInQueue.title}>
+                Next in queue →
+              </Link>
+            ) : null}
             <ProjectStatusWord status={currentStatus} size="m" />
           </div>
         </div>
@@ -244,6 +283,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
                 initialDecision={project.decision}
                 initialApprovedMinutes={project.approvedMinutes}
                 initialNote={project.noteToMaker}
+                trackedSeconds={audit.totalSeconds}
+                review={review}
               />
             </Panel>
 

@@ -11,6 +11,7 @@ import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
+import { waiting } from "@/lib/review/queue";
 import type { ProjectStatus } from "@/lib/status";
 
 import styles from "./page.module.css";
@@ -57,6 +58,13 @@ export default async function ShipsPage({
   }, {});
 
   const shown = rows.filter((row) => active.matches(projectStatus(row.project)));
+  // The queue is first come, first served: the longest-waiting maker is reviewed next.
+  if (active.key === "open") {
+    shown.sort((a, b) => (a.project.submittedAt?.getTime() ?? 0) - (b.project.submittedAt?.getTime() ?? 0));
+  }
+  const now = new Date();
+  const oldest = active.key === "open" && shown[0]?.project.submittedAt ? waiting(shown[0].project.submittedAt, now) : null;
+  const overdue = shown.filter((row) => row.project.submittedAt && projectStatus(row.project) === "queued" && waiting(row.project.submittedAt, now).tone === "bad").length;
 
   return (
     <AppShell title="Superviewer • Submissions Queue">
@@ -80,9 +88,22 @@ export default async function ShipsPage({
       </nav>
 
       <Panel>
-        <PanelLabel>
-          {shown.length === 1 ? "1 submission" : `${shown.length} submissions`}
-        </PanelLabel>
+        <div className={styles.queueHead}>
+          <PanelLabel>
+            {shown.length === 1 ? "1 submission" : `${shown.length} submissions`}
+          </PanelLabel>
+          {oldest ? (
+            <span className={styles.queueStat}>
+              oldest waiting <b className={styles[`wait_${oldest.tone}`]}>{oldest.label}</b>
+              {overdue > 0 ? ` · ${overdue} over a week` : ""}
+            </span>
+          ) : null}
+          {active.key === "open" && shown[0] ? (
+            <Link href={`/dash/ships/${shown[0].project.id}`} className={styles.actionReviewPrimary}>
+              Start with the oldest →
+            </Link>
+          ) : null}
+        </div>
         {shown.length === 0 ? (
           <p className={styles.none}>Nothing here.</p>
         ) : (
@@ -116,7 +137,14 @@ export default async function ShipsPage({
                           Hackatime: {project.hackatimeProjects.join(", ") || "none claimed"}
                         </span>
                       </td>
-                      <td>{project.submittedAt ? WHEN.format(project.submittedAt) : ""}</td>
+                      <td>
+                        {project.submittedAt ? WHEN.format(project.submittedAt) : ""}
+                        {project.submittedAt && isQueued ? (
+                          <span className={`${styles.sub} ${styles[`wait_${waiting(project.submittedAt, now).tone}`]}`}>
+                            waiting {waiting(project.submittedAt, now).label}
+                          </span>
+                        ) : null}
+                      </td>
                       <td>
                         {project.approvedMinutes != null ? (
                           <span style={{ color: "var(--ok)", fontWeight: 600 }}>

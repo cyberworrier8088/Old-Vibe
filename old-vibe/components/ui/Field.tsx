@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement } from "react";
-import type { InputHTMLAttributes, ReactElement, ReactNode, TextareaHTMLAttributes } from "react";
+import type { ComponentProps, InputHTMLAttributes, ReactElement, ReactNode } from "react";
 
 import styles from "./Field.module.css";
 
@@ -48,7 +48,7 @@ export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputEleme
   return <input {...rest} className={[styles.control, className].filter(Boolean).join(" ")} />;
 }
 
-export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function Textarea({ className, ...rest }: ComponentProps<"textarea">) {
   return (
     <textarea
       {...rest}

@@ -3,13 +3,19 @@ import { NextResponse } from "next/server";
 import { isOrganizer } from "@/lib/auth/organizer";
 import { getCurrentUser } from "@/lib/auth/users";
 import { applyDecision, clearDecision } from "@/lib/review/decisions";
+import { saveHoursJustification } from "@/lib/ysws/submissions";
 
 export const dynamic = "force-dynamic";
 
 const DECISIONS = ["approved", "changes", "rejected"] as const;
 type Decision = (typeof DECISIONS)[number];
 
-type Body = { decision?: string; approvedHours?: number; noteToMaker?: string };
+type Body = {
+  decision?: string;
+  approvedHours?: number;
+  noteToMaker?: string;
+  hoursJustification?: string;
+};
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const organizer = await getCurrentUser();
@@ -57,6 +63,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "not_sent" }, { status: 409 });
   if (result.status === "already_decided") {
     return NextResponse.json({ error: "already_decided" }, { status: 409 });
+  }
+
+  const justification =
+    typeof body.hoursJustification === "string" ? body.hoursJustification.trim().slice(0, 10_000) : "";
+  if (decision === "approved" && justification) {
+    await saveHoursJustification(id, justification);
   }
 
   return NextResponse.json({ ok: true, decision });

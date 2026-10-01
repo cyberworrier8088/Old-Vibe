@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { Suspense, use, useId, useRef, useState } from "react";
+import type { Ref } from "react";
 
 import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
@@ -15,7 +16,16 @@ import {
   usdForPaper,
 } from "@/lib/rewards";
 
+import { withDecision } from "@/lib/review/justification";
+
+import type { ReviewEvidence } from "./EvidencePanel";
 import styles from "./page.module.css";
+
+/** Prefilled from the evidence once it streams in; the reviewer can edit it before approving. */
+function JustificationBox({ review, boxRef }: { review: Promise<ReviewEvidence>; boxRef: Ref<HTMLTextAreaElement> }) {
+  const { justification } = use(review);
+  return <Textarea ref={boxRef} defaultValue={justification} rows={10} className={styles.justification} />;
+}
 
 const OPTIONS = [
   { key: "approved", label: "Approve", tone: "ok" },
@@ -54,6 +64,8 @@ export function DecisionForm({
   initialDecision = null,
   initialApprovedMinutes = null,
   initialNote = null,
+  trackedSeconds = 0,
+  review,
 }: {
   id: string;
   trackedProjects: number;
@@ -65,9 +77,12 @@ export function DecisionForm({
   initialDecision?: string | null;
   initialApprovedMinutes?: number | null;
   initialNote?: string | null;
+  trackedSeconds?: number;
+  review?: Promise<ReviewEvidence>;
 }) {
   const router = useRouter();
   const ids = useId();
+  const justificationRef = useRef<HTMLTextAreaElement>(null);
 
   const [isEditing, setIsEditing] = useState(!initialDecided);
   const [decision, setDecision] = useState<string>(initialDecision ?? "approved");
@@ -103,6 +118,10 @@ export function DecisionForm({
         decision,
         approvedHours: Number(hours),
         noteToMaker: note,
+        hoursJustification:
+          decision === "approved" && justificationRef.current
+            ? withDecision(justificationRef.current.value, Number(hours), trackedSeconds)
+            : undefined,
       }),
     });
 
@@ -290,6 +309,18 @@ export function DecisionForm({
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {decision === "approved" && review ? (
+        <Field
+          id={`${ids}-justification`}
+          label="Hour justification"
+          help="Written from the evidence. Sent with the project to Hack Club's unified YSWS database. Edit anything that is not right."
+        >
+          <Suspense fallback={<Textarea rows={3} disabled placeholder="Gathering evidence..." />}>
+            <JustificationBox review={review} boxRef={justificationRef} />
+          </Suspense>
+        </Field>
       ) : null}
 
       <Field

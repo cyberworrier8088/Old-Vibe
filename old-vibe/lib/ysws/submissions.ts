@@ -243,3 +243,12 @@ export async function refreshQueued(): Promise<void> {
     await refreshUnified(row.projectId);
   }
 }
+
+/** Stores the reviewer's hour justification so it travels with the project to the unified database. */
+export async function saveHoursJustification(projectId: string, text: string): Promise<void> {
+  const values = { hoursJustification: text };
+  await getDb()
+    .insert(yswsSubmissions)
+    .values({ projectId, ...values })
+    .onConflictDoUpdate({ target: yswsSubmissions.projectId, set: values });
+}
