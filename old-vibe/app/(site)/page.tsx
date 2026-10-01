@@ -13,7 +13,7 @@ export default function HomePage() {
         <div className={styles.kicker}>
           <span>Old Vibe</span>
           <span>•</span>
-          <span>No AI</span>
+          <span>Hand-written</span>
           <span>•</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <PaperIcon size={16} variant="default" /> Paper Currency Rewards
@@ -26,8 +26,7 @@ export default function HomePage() {
         </h1>
 
         <p className={styles.lead}>
-          No vibe coding. No prompt engineering. No AI autocomplete. Just you, your editor, and
-          software you actually understand from top to bottom.
+          Use any editor you like, even an AI-enabled IDE. But no vibe coding, no AI-written code and no copy-paste: every line is yours, and you can explain all of it.
         </p>
 
         <div className={styles.dealGrid}>
@@ -37,8 +36,7 @@ export default function HomePage() {
             </div>
             <h2 className={styles.dealTitle}>Handmade Software</h2>
             <p className={styles.dealBody}>
-              Build a website, CLI, game, tool, or hardware project completely by hand. Every line of code
-              must be written by a human. No LLM wrappers or copy-paste AI scaffolds.
+              Build a website, CLI, game, tool, or hardware project completely by hand. Every line must be written by you. No vibe coding, no code from a chat or an agent, and no pasted code you did not write.
             </p>
           </div>
 
@@ -79,11 +77,39 @@ export default function HomePage() {
 
       <Section id="rules" label="the rules">
         <div className={styles.rulesContent}>
-          <h2 className={styles.dealTitle}>Old Vibe Code Only</h2>
+          <h2 className={styles.dealTitle}>Your Code, Your Hands</h2>
           <p className={styles.dealBody}>
-            You can use AI for research and learning, but <strong>using AI to generate code or copy-pasting AI code is strictly prohibited.</strong>
-            A 1% usage threshold is allowed, but anything more requires a detailed explanation or your project will be rejected. 
-            If you want to build with AI, this is not the YSWS for you.
+            An AI-enabled IDE is fine, it is just an editor. What counts is who wrote the code.
+            Every line has to come from you, and you have to be able to explain it. A 1% slip is
+            tolerated; anything more needs a written explanation or the project is rejected.
+          </p>
+
+          <div className={styles.ruleCols}>
+            <div className={`${styles.ruleCard} ${styles.ruleYes}`}>
+              <span className={styles.ruleHead}>Allowed</span>
+              <ul>
+                <li>Any editor or IDE, including ones with AI built in</li>
+                <li>Docs, tutorials, Stack Overflow, and asking a person for help</li>
+                <li>Libraries and frameworks, credited in your README</li>
+                <li>Adapting a short example from the docs, once you understand it</li>
+              </ul>
+            </div>
+            <div className={`${styles.ruleCard} ${styles.ruleNo}`}>
+              <span className={styles.ruleHead}>Not allowed</span>
+              <ul>
+                <li>Vibe coding, or agents and chats writing your project</li>
+                <li>Accepting AI-generated code, completions included</li>
+                <li>Copy-pasting code you did not write and cannot explain</li>
+                <li>Faking time: bots, fake keystrokes, idle editors</li>
+              </ul>
+            </div>
+          </div>
+
+          <h2 className={styles.dealTitle}>Show Your Work</h2>
+          <p className={styles.dealBody}>
+            Real projects grow in steps. Reviewers read your commit history, your Hackatime
+            activity and your README, and may ask you to explain a part of the code. Large blocks
+            that appear all at once, or a project with one commit, will be looked at closely.
           </p>
           
           <h2 className={styles.dealTitle}>2+ Hours Minimum</h2>

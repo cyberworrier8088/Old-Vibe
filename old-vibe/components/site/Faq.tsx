@@ -8,20 +8,32 @@ type Entry = { question: string; answer: ReactNode };
 
 const FAQ: Entry[] = [
   {
-    question: "Why strictly no AI or vibe-coding?",
+    question: "Why no vibe coding?",
     answer:
-      "Vibe coding might be trendy, but Old Vibe is about true craftsmanship. When you code without AI, you genuinely learn how software works: you debug your own mistakes, understand every data structure, and build lasting intuition. We want to celebrate the real craft of programming.",
+      "Old Vibe is about craft. When you write the code yourself you debug your own mistakes, understand every data structure and build intuition that lasts. Vibe coding hands that learning to a model, so it does not count here.",
   },
   {
     question: "What tools are allowed vs prohibited?",
     answer: (
       <>
-        <strong>Allowed:</strong> Language documentation, MDN, textbooks, StackOverflow answers, standard syntax highlighting, and linters.
+        <strong>Allowed:</strong> any editor or IDE (including AI-enabled ones), documentation, MDN,
+        textbooks, Stack Overflow, linters and formatters.
         <br />
         <br />
-        <strong>Prohibited:</strong> GitHub Copilot, Cursor AI autocompletions, ChatGPT, Claude, v0, Bolt.new, and any AI code generation or boilerplate synthesis.
+        <strong>Not allowed:</strong> code written by ChatGPT, Claude, v0, Bolt.new, agents or
+        generators, accepted AI completions, vibe coding, and copy-pasting code you did not write.
       </>
     ),
+  },
+  {
+    question: "Can I use Cursor, Copilot or another AI IDE?",
+    answer:
+      "You can open it, it is just an editor. You cannot let it write your project: chat, agent mode and accepted suggestions all count as AI-written code. If you are not sure, turn the AI features off while you work on your submission.",
+  },
+  {
+    question: "Is copy-paste allowed?",
+    answer:
+      "Not for code you did not write. Reading docs and typing out what you learned is fine. Pasting a block from somewhere else is not, and large blocks that appear in one go are flagged during review.",
   },
   {
     question: "What is the digital currency and how does the Old Vibe shop work?",
@@ -36,7 +48,7 @@ const FAQ: Entry[] = [
   {
     question: "How do reviewers know if AI was used?",
     answer:
-      "Our reviewers examine your git commit history, coding cadence on Hackatime, and code architecture. Natural human coding has iterative commits, edits, and distinct problem-solving styles that look completely different from LLM outputs. You will also submit a brief demo explaining your code.",
+      "Reviewers read your commit history, your Hackatime activity (cadence, files, sudden large additions) and your README, and may ask you about a part of your code. Real work shows iteration, mistakes and fixes. Generated or pasted code looks different.",
   },
   {
     question: "Who is eligible to participate?",

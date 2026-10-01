@@ -247,7 +247,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <div className={styles.guidelinesBox}>
               <div className={styles.guidelinesTitle}>Old-Vibe Review Checklist</div>
               <ul className={styles.guidelinesList}>
-                <li>No AI-generated scaffolding or LLM code wrappers.</li>
+                <li>No AI-written code, agent output or pasted code. An AI-enabled editor alone is fine.</li>
+                <li>Commit history shows real iteration, not one large drop.</li>
                 <li>Verify commit activity occurred during the valid event window.</li>
                 <li>Confirm repo and live demo are accessible and functional.</li>
               </ul>

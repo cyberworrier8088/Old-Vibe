@@ -490,7 +490,7 @@ export function FraudInspector({
                 ))}
               </div>
               <p className={styles.aiRuleViolationNote}>
-                <strong>Old-Vibe Policy Violation:</strong> Old-Vibe rewards are strictly reserved for code written by hand. Projects utilizing automated AI agents (such as Antigravity IDE, Cursor, Windsurf, Copilot, or LLM code generators) are not eligible for approval.
+                <strong>Old-Vibe Policy Violation:</strong> Old-Vibe rewards are for code the maker wrote themselves. An AI-enabled IDE is allowed, but projects with AI-written code, agent output or pasted code are not eligible for approval.
               </p>
             </div>
           ) : null}

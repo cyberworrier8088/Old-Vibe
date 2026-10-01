@@ -7,7 +7,13 @@ import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { PaperIcon } from "@/components/ui/PaperIcon";
-import { paperForMinutes, paperRateForStreak, streakBonusForStreak } from "@/lib/rewards";
+import {
+  PAPER_USD_VALUE,
+  paperForMinutes,
+  paperRateForStreak,
+  streakBonusForStreak,
+  usdForPaper,
+} from "@/lib/rewards";
 
 import styles from "./page.module.css";
 
@@ -20,7 +26,7 @@ const OPTIONS = [
 const PRESETS: Record<string, string[]> = {
   approved: [
     "Awesome project! The retro aesthetic is spot on.",
-    "Approved! Clean commits, great README, and verified no-AI code.",
+    "Approved! Clean commits, great README, and verified hand-written code.",
     "Well-documented code and fun demo to test. Great work!",
     "Creative implementation with authentic manual coding.",
   ],
@@ -31,7 +37,7 @@ const PRESETS: Record<string, string[]> = {
     "Please add a repository link with public source code.",
   ],
   rejected: [
-    "Does not match Old-Vibe handcrafted guideline (AI autocomplete/scaffolding detected).",
+    "Does not match Old-Vibe handcrafted guideline (AI-written or pasted code detected).",
     "Code appears pre-existing or lacks commits during the event window.",
     "Repository is empty or does not contain a working project.",
   ],
@@ -277,6 +283,11 @@ export function DecisionForm({
                 {calculatedPaper} <PaperIcon size={18} />
               </span>
             </div>
+            {calculatedPaper > 0 ? (
+              <span className={styles.calcRate}>
+                about ${usdForPaper(calculatedPaper).toFixed(2)} to the program at ${PAPER_USD_VALUE.toFixed(2)} a Paper
+              </span>
+            ) : null}
           </div>
         </div>
       ) : null}
