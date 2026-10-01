@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { Reveal } from "@/components/ui/Reveal";
+
 import styles from "./Section.module.css";
 
 export function Section({
@@ -12,9 +14,9 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className={styles.section}>
+    <Reveal id={id} className={styles.section}>
       <span className={styles.label}>✦ {label}</span>
       <div className={styles.body}>{children}</div>
-    </section>
+    </Reveal>
   );
 }

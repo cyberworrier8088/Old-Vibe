@@ -112,3 +112,23 @@
 .root:focus-visible {
   transform: translateY(-1px);
 }
+
+/* A soft sheen sweeps across the solid button on hover. */
+.root:not(.ghost):not(.quiet):not(.danger) {
+  position: relative;
+  overflow: hidden;
+}
+
+.root:not(.ghost):not(.quiet):not(.danger)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.root:not(.ghost):not(.quiet):not(.danger):hover::after {
+  transform: translateX(120%);
+}

@@ -43,3 +43,26 @@
   font-size: 16px;
   color: var(--soft);
 }
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.item[open] .answer {
+  animation: open 0.3s ease both;
+}
+
+.question {
+  transition: color 0.15s ease, padding-left 0.2s ease;
+}
+
+.question:hover {
+  padding-left: 6px;
+}

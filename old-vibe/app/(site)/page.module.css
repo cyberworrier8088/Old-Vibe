@@ -207,3 +207,116 @@
 .dealCard:hover {
   transform: translateY(-5px) rotate(-0.4deg);
 }
+
+/* A slow warm glow drifts behind the hero. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, 24px) scale(1.12);
+  }
+}
+
+.hero {
+  position: relative;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -60px;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(194, 65, 12, 0.14), transparent 68%);
+  filter: blur(8px);
+  animation: drift 14s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.ruleCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+}
+
+.ruleCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-radius: var(--wobble-sm);
+  border: 1px solid var(--rule);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ruleCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--drop);
+}
+
+.ruleCard ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+.ruleCard li {
+  padding-left: 18px;
+  position: relative;
+}
+
+.ruleCard li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.ruleYes {
+  background: var(--paper-green-bg);
+  border-color: var(--paper-green-border);
+}
+
+.ruleYes li::before {
+  content: "+";
+  color: var(--ok);
+}
+
+.ruleNo {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.ruleNo li::before {
+  content: "x";
+  color: var(--bad);
+}
+
+.ruleHead {
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ruleYes .ruleHead {
+  color: var(--ok);
+}
+
+.ruleNo .ruleHead {
+  color: var(--bad);
+}
+
+@media (max-width: 700px) {
+  .ruleCols {
+    grid-template-columns: 1fr;
+  }
+}
