@@ -8,12 +8,29 @@
   display: flex;
   flex-direction: column;
   gap: var(--s5);
-  padding: 24px 16px;
+  /* No top padding: the Hack Club flag hangs from the very top edge. */
+  padding: 0 16px 24px;
   background: var(--surface);
   border-right: 1px solid var(--rule);
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
+}
+
+/* The flag sits in normal flow so the brand below it can never be covered. */
+.flagLink {
+  display: block;
+  align-self: flex-start;
+  margin: 0 0 calc(var(--s3) * -1) 10px;
+  line-height: 0;
+}
+
+.flag {
+  display: block;
+  width: 128px;
+  height: auto;
+  border: 0;
 }
 
 .brand {
@@ -23,20 +40,6 @@
   align-self: flex-start;
   text-decoration: none;
   padding: 4px 8px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: var(--cream);
-  color: var(--night);
-  border-radius: 4px;
-  font-family: var(--data);
-  font-weight: 700;
-  font-size: 12px;
 }
 
 .wordmark {
@@ -58,7 +61,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--s5);
-  padding: 32px 40px;
+  /* Extra room at the bottom so the fixed "made by" badge never covers the last row. */
+  padding: 32px 40px 80px;
   min-width: 0;
 }
 
@@ -86,6 +90,7 @@
   bottom: 0;
   background: var(--surface);
   border-top: 1px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom);
   z-index: 40;
 }
 
@@ -102,10 +107,12 @@
   border-radius: var(--wobble-sm);
   box-shadow: var(--drop-quiet);
   font-size: 13px;
-  color: var(--muted);
+  color: var(--lilac);
   text-decoration: none;
   z-index: 50;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
 }
 
 .madeBy:hover {
@@ -116,6 +123,7 @@
 .madeByIcon {
   width: 24px;
   height: 24px;
+  flex: none;
 }
 
 @media (max-width: 760px) {
@@ -134,4 +142,64 @@
   .bar {
     display: block;
   }
+
+  /* On phones the badge joins the page flow, just above the nav bar, instead of floating over it. */
+  .madeBy {
+    position: static;
+    margin: var(--s4);
+    justify-content: center;
+    text-align: center;
+  }
+
+  .madeBy:hover {
+    transform: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Page content glides in, one block after another. */
+.main > * {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.main > *:nth-child(1) {
+  animation-delay: 60ms;
+}
+
+.main > *:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.main > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.main > *:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.main > *:nth-child(5) {
+  animation-delay: 300ms;
+}
+
+.main > *:nth-child(6) {
+  animation-delay: 360ms;
+}
+
+.main > *:nth-child(7) {
+  animation-delay: 420ms;
+}
+
+.main > *:nth-child(8) {
+  animation-delay: 480ms;
 }

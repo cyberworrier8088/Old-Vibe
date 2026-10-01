@@ -28,8 +28,16 @@ export async function AppShell({
     <>
       <div className={styles.shell}>
         <aside className={styles.side}>
-          <a href="https://hackclub.com/">
-            <img style={{ position: "absolute", top: 0, left: 10, border: 0, width: 128, zIndex: 999 }} src="https://assets.hackclub.com/flag-orpheus-top.svg" alt="Hack Club" />
+          <a href="https://hackclub.com/" className={styles.flagLink}>
+            {/* Small SVG served from the Hack Club CDN, so next/image has nothing to optimise. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className={styles.flag}
+              src="https://assets.hackclub.com/flag-orpheus-top.svg"
+              alt="Hack Club"
+              width={128}
+              height={72}
+            />
           </a>
           <Link href="/dash" className={styles.brand}>
             <OldManFace size={26} />
@@ -46,13 +54,20 @@ export async function AppShell({
           {children}
         </main>
       </div>
+      <a href="https://hackclub.com/" target="_blank" rel="noreferrer" className={styles.madeBy}>
+        OldVibe is made with ♥ by teenagers, for teenagers.
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://assets.hackclub.com/icon-progress-rounded.svg"
+          alt="Hack Club"
+          width={24}
+          height={24}
+          className={styles.madeByIcon}
+        />
+      </a>
       <div className={styles.bar}>
         <NavLinks variant="bar" items={nav} />
       </div>
-      <a href="https://hackclub.com/" target="_blank" rel="noreferrer" className={styles.madeBy}>
-        OldVibe is made with ♥ by teenagers, for teenagers.
-        <img src="https://assets.hackclub.com/icon-progress-rounded.svg" alt="Hack Club" className={styles.madeByIcon} />
-      </a>
     </>
   );
 }

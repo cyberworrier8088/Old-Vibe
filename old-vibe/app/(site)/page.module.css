@@ -150,3 +150,60 @@
   max-width: 600px;
   margin: 0 auto;
 }
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheen {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+.hero > * {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hero > *:nth-child(1) {
+  animation-delay: 60ms;
+}
+
+.hero > *:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.hero > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.hero > *:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.hero > *:nth-child(5) {
+  animation-delay: 300ms;
+}
+
+.hero > *:nth-child(6) {
+  animation-delay: 360ms;
+}
+
+.headingHighlight {
+  animation: sheen 4s ease-in-out 1s infinite;
+}
+
+.dealCard:hover {
+  transform: translateY(-5px) rotate(-0.4deg);
+}
