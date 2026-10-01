@@ -86,6 +86,8 @@ export type FraudAnalysis = {
   activeHoursCount: number;
   isZombieCodingSuspicious: boolean;
   suspiciousLineJumpsCount: number;
+  /** Large additions to one file within seconds: how pasted code looks in a heartbeat stream. */
+  pasteBurstCount: number;
   maxLineJump: number;
   noiseEntitiesCount: number;
   noiseEntityRatio: number;
@@ -525,7 +527,7 @@ async function buildMakerProjectBreakdown(
     const handcraftedPercentage = Math.max(0, 100 - aiPercentage);
     const isAiDetected = aiHeartbeatCount > 0;
 
-    let aiVerdict = "CLEAN: 100% Handcrafted code detected. No AI categories, agent scaffolds, or prompt artifacts found.";
+    let aiVerdict = "CLEAN: 100% Handcrafted code detected. No AI categories, agent files or model metadata found.";
     if (aiPercentage >= 50) {
       aiVerdict = `CRITICAL FRAUD: ${aiPercentage}% of project was generated via AI / Agent (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Strict violation of Old-Vibe handcrafted rule!`;
     } else if (aiPercentage >= 10) {
@@ -574,19 +576,24 @@ async function buildMakerProjectBreakdown(
     let burstCount = 0;
     let multiMachineCollisions = 0;
     let suspiciousLineJumpsCount = 0;
+    let pasteBurstCount = 0;
 
     // Track line jumps on write events across successive heartbeats
-    const lastEntityLines = new Map<string, number>();
+    const lastEntityLines = new Map<string, { lines: number; time: number }>();
     for (const hb of sortedHbs) {
       if (hb.entity && typeof hb.lines === "number") {
-        const prevLines = lastEntityLines.get(hb.entity);
-        if (prevLines !== undefined && hb.is_write) {
-          const delta = Math.abs(hb.lines - prevLines);
-          if (delta >= 350) {
+        const prev = lastEntityLines.get(hb.entity);
+        if (prev !== undefined && hb.is_write) {
+          const delta = hb.lines - prev.lines;
+          if (Math.abs(delta) >= 350) {
             suspiciousLineJumpsCount++;
           }
+          // Typing adds a few lines a minute. Dozens of new lines in seconds is a paste.
+          if (delta >= 60 && hb.time - prev.time <= 20) {
+            pasteBurstCount++;
+          }
         }
-        lastEntityLines.set(hb.entity, hb.lines);
+        lastEntityLines.set(hb.entity, { lines: hb.lines, time: hb.time });
       }
     }
 
@@ -849,6 +856,10 @@ async function buildMakerProjectBreakdown(
       authenticityScore -= 20;
       decisionReasons.push(`Excessive continuous session (${maxContinuousHours}h without break).`);
     }
+    if (pasteBurstCount >= 3) {
+      authenticityScore -= pasteBurstCount >= 8 ? 25 : 12;
+      decisionReasons.push(`Likely pasted code: ${pasteBurstCount} large additions within seconds.`);
+    }
     if (suspiciousLineJumpsCount >= 5) {
       authenticityScore -= 20;
       decisionReasons.push(`Massive automated line dump spikes (${suspiciousLineJumpsCount} instances).`);
@@ -890,7 +901,8 @@ async function buildMakerProjectBreakdown(
       doubleDippingMinutes > 15 ||
       idleBloatAnomaly ||
       isZombieCodingSuspicious ||
-      suspiciousLineJumpsCount >= 3
+      suspiciousLineJumpsCount >= 3 ||
+      pasteBurstCount >= 3
     ) {
       recommendedDecision = "SCRUTINIZE";
     }
@@ -915,10 +927,10 @@ async function buildMakerProjectBreakdown(
         pass: doubleDippingCount === 0,
       },
       {
-        label: "No-AI Craftsmanship (Old-Vibe Core Rule)",
+        label: "Hand-Written Code (Old-Vibe Core Rule)",
         detail: isAiDetected
           ? `VIOLATION: ${aiPercentage}% AI coding detected (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Detected: ${Array.from(aiReasonsSet).slice(0, 3).join("; ")}.`
-          : "PASSED: 100% Handcrafted. No AI autocomplete, AI agents, or prompt engineering detected.",
+          : "PASSED: 100% Handcrafted. No AI categories, agent files or model metadata detected.",
         pass: !isAiDetected,
       },
       {
@@ -949,6 +961,14 @@ async function buildMakerProjectBreakdown(
             ? "Rapid-burst heartbeats detected (possible automated script injection)."
             : `Natural cadence (~${Math.round((avgIntervalSec / 60) * 10) / 10}m average, ±${intervalStdDevSeconds}s natural variance).`,
         pass: !isFixedIntervalSuspicious && !burstWarning,
+      },
+      {
+        label: "Copy-Paste Detection",
+        detail:
+          pasteBurstCount > 0
+            ? `Warning: ${pasteBurstCount} times 60+ lines appeared in one file within 20 seconds. Ask the maker to explain those parts.`
+            : "PASSED: No pasted-in blocks detected. Lines grow at a typing pace.",
+        pass: pasteBurstCount < 3,
       },
       {
         label: "Typing Velocity & Sudden Line Dumps",
@@ -1020,6 +1040,7 @@ async function buildMakerProjectBreakdown(
       activeHoursCount,
       isZombieCodingSuspicious,
       suspiciousLineJumpsCount,
+      pasteBurstCount,
       maxLineJump,
       noiseEntitiesCount,
       noiseEntityRatio,
@@ -1061,6 +1082,7 @@ async function buildMakerProjectBreakdown(
       activeHoursCount: 0,
       isZombieCodingSuspicious: false,
       suspiciousLineJumpsCount: 0,
+      pasteBurstCount: 0,
       maxLineJump: 0,
       noiseEntitiesCount: 0,
       noiseEntityRatio: 0,
