@@ -74,8 +74,10 @@
   position: relative;
 }
 
-.side a:hover {
-  transform: translateX(3px);
+@media (hover: hover) {
+  .side a:hover {
+    transform: translateX(3px);
+  }
 }
 
 .side a:active {

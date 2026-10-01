@@ -44,7 +44,9 @@
     box-shadow 0.2s ease;
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--drop);
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--drop);
+  }
 }

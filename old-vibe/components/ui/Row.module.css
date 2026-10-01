@@ -44,6 +44,8 @@ a.row:hover {
     transform 0.15s ease;
 }
 
-a.row:hover {
-  transform: translateX(4px);
+@media (hover: hover) {
+  a.row:hover {
+    transform: translateX(4px);
+  }
 }

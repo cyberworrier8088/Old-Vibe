@@ -17,11 +17,13 @@
     color 0.15s ease;
 }
 
-.toggle:hover {
-  color: var(--cream);
-  background: var(--raised);
-  border-color: var(--glow);
-  transform: rotate(18deg);
+@media (hover: hover) {
+  .toggle:hover {
+    color: var(--cream);
+    background: var(--raised);
+    border-color: var(--glow);
+    transform: rotate(18deg);
+  }
 }
 
 .toggle:active {
@@ -60,4 +62,11 @@
 :global(html[data-theme="dark"]) .moon {
   opacity: 0;
   transform: rotate(90deg) scale(0.4);
+}
+
+@media (pointer: coarse) {
+  .toggle {
+    width: 44px;
+    height: 44px;
+  }
 }

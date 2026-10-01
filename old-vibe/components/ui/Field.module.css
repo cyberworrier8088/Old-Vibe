@@ -98,3 +98,10 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* 16px stops iOS Safari zooming the page when a field is focused. */
+@media (max-width: 760px) {
+  .control {
+    font-size: 16px;
+  }
+}

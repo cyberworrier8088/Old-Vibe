@@ -68,9 +68,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.dealCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--drop);
+@media (hover: hover) {
+  .dealCard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--drop);
+  }
 }
 
 .dealCardPaper {
@@ -210,8 +212,10 @@
   animation: sheen 4s ease-in-out 1s infinite;
 }
 
-.dealCard:hover {
-  transform: translateY(-5px) rotate(-0.4deg);
+@media (hover: hover) {
+  .dealCard:hover {
+    transform: translateY(-5px) rotate(-0.4deg);
+  }
 }
 
 /* A slow warm glow drifts behind the hero. */
@@ -260,9 +264,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.ruleCard:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--drop);
+@media (hover: hover) {
+  .ruleCard:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--drop);
+  }
 }
 
 .ruleCard ul {
@@ -370,8 +376,10 @@
   transition: transform 0.2s ease;
 }
 
-.ladderStep:hover {
-  transform: translateY(-3px);
+@media (hover: hover) {
+  .ladderStep:hover {
+    transform: translateY(-3px);
+  }
 }
 
 .ladderFinal {
@@ -402,5 +410,11 @@
 @media (max-width: 700px) {
   .ladder {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .actions > a {
+    flex: 1 1 100%;
   }
 }

@@ -30,6 +30,8 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#14120f" },
   ],
   colorScheme: "light dark",
+  // Lets the layout use the safe areas around a phone's notch and home bar.
+  viewportFit: "cover",
 };
 
 // Runs before first paint: the saved choice, else the system setting.

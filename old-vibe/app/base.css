@@ -131,3 +131,15 @@ pre,
     scroll-behavior: auto !important;
   }
 }
+
+/* No double-tap zoom delay on controls, and a quiet tap highlight in the accent colour. */
+a,
+button,
+summary,
+label,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgb(var(--orchid-rgb) / 0.15);
+}

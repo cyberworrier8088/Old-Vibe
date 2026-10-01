@@ -132,3 +132,10 @@
 .root:not(.ghost):not(.quiet):not(.danger):hover::after {
   transform: translateX(120%);
 }
+
+/* Fingers need about 44px. */
+@media (pointer: coarse) {
+  .root {
+    min-height: 44px;
+  }
+}
