@@ -1,4 +1,5 @@
-const LIBPQ_ONLY = ["sslrootcert", "sslcert", "sslkey", "sslcrl", "sslcompression"];
+// libpq options the postgres driver does not take (Neon adds channel_binding to its URLs).
+const LIBPQ_ONLY = ["sslrootcert", "sslcert", "sslkey", "sslcrl", "sslcompression", "channel_binding"];
 
 /** Hosts that never leave the machine or the compose network, so TLS adds nothing there. */
 const PRIVATE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "db"]);
@@ -37,10 +38,14 @@ export function assertSafeForProduction(raw: string, env: string | undefined = p
 
 /** Require TLS in production unless the database is on the same machine or compose network. */
 export function wantsTls(raw: string, env: string | undefined = process.env.NODE_ENV): boolean {
-  if (env !== "production") return false;
   try {
     const url = new URL(raw);
-    if (url.searchParams.get("sslmode") === "disable") return false;
+    const sslmode = url.searchParams.get("sslmode");
+    // Honour an explicit sslmode in the URL regardless of environment.
+    if (sslmode === "disable") return false;
+    if (sslmode === "require") return true;
+    // Outside production, only require TLS when the URL says so (handled above).
+    if (env !== "production") return false;
     return !PRIVATE_HOSTS.has(url.hostname);
   } catch {
     return false;

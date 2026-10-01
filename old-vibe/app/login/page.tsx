@@ -5,7 +5,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { Banner } from "@/components/ui/Banner";
 import { ButtonLink } from "@/components/ui/Button";
 import { safeReturnTo } from "@/lib/auth/oauth-state";
-import { getSession } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/users";
 
 import styles from "./page.module.css";
 
@@ -28,7 +28,11 @@ export default async function LoginPage({
   const { error, next } = await searchParams;
   const returnTo = safeReturnTo(next);
 
-  if (await getSession()) redirect(returnTo ?? "/dash");
+  // Only redirect when the session is backed by a real user row in the database.
+  // A valid JWT with no matching user (fresh DB) should show the login form, not loop.
+  const user = await getCurrentUser();
+  if (user) redirect(returnTo ?? "/dash");
+
 
   const href = returnTo
     ? `/api/auth/login?next=${encodeURIComponent(returnTo)}`
