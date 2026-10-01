@@ -66,11 +66,6 @@ export async function POST(request: Request) {
     updateMessage: body.updateMessage,
   };
 
-  // const cutoffDate = new Date("2026-09-11T00:00:00Z");
-  // if (new Date() > cutoffDate) {
-  //   return invalid("", "The deadline for submissions was September 11, 2026. Submissions are now closed.");
-  // }
-
   const pickerProjects = await getPickerProjects(user);
   if (!pickerProjects) {
     return invalid("hackatime_projects", "Hackatime is not connected.");

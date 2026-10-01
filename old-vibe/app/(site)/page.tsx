@@ -152,11 +152,6 @@ export default function HomePage() {
           <p className={styles.dealBody}>
             You must have at least 2 hours of tracked time in Hackatime for your project to be eligible for submission. We value genuine effort.
           </p>
-
-          <h2 className={styles.dealTitle}>Submission Cut-off</h2>
-          <p className={styles.dealBody}>
-            The deadline for all submissions is <strong>September 11, 2026</strong>. Hackatime hours and projects logged after this date will not be accepted.
-          </p>
         </div>
       </Section>
 
