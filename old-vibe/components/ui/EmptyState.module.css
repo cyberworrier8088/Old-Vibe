@@ -1,7 +1,7 @@
 .empty {
   padding: var(--s7) var(--s5);
   text-align: center;
-  background: rgba(19, 17, 26, 0.5);
+  background: var(--surface);
   border: 2px dashed var(--edge);
   border-radius: var(--wobble);
 }
@@ -24,11 +24,40 @@
   max-width: 44ch;
   margin: var(--s2) auto var(--s4);
   font-size: 15.5px;
-  color: var(--muted);
+  color: var(--lilac);
 }
 
 .action {
   display: flex;
   justify-content: center;
   gap: var(--s3);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.empty {
+  animation: rise 0.5s ease both;
+}
+
+.art {
+  animation: bob 3.2s ease-in-out infinite;
 }

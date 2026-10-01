@@ -16,7 +16,7 @@ export function SiteNav() {
         </Link>
         <span className={styles.links}>
           {SITE_NAV.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} className={styles.link}>
               {item.label}
             </Link>
           ))}

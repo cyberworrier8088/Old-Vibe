@@ -14,8 +14,10 @@
 .brand {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 10px;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .badge {
@@ -62,13 +64,15 @@
   font-size: 14px;
 }
 
-.links a {
+/* A class of its own, not `.links a`: that selector out-ranked the buttons' own colours and left
+   "start building" as dark grey text on a near-black fill. */
+.link {
   color: var(--soft);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
-.links a:hover {
+.link:hover {
   color: var(--cream);
   text-decoration: none;
 }
@@ -87,4 +91,12 @@
     gap: var(--s3);
     font-size: 13px;
   }
+}
+
+.badge {
+  transition: transform 0.4s ease;
+}
+
+.brand:hover .badge {
+  transform: rotate(-8deg) scale(1.08);
 }

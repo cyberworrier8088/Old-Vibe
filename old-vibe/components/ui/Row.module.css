@@ -36,3 +36,14 @@ a.row:hover {
   font-size: 12px;
   color: var(--muted);
 }
+
+.row {
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+a.row:hover {
+  transform: translateX(4px);
+}

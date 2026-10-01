@@ -6,7 +6,7 @@
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 119, 198, 0.25), transparent),
     radial-gradient(circle 600px at 50% 100%, rgba(245, 166, 35, 0.08), transparent);
-  color: var(--ink);
+  color: #fff;
   font-family: var(--body);
 }
 
@@ -90,6 +90,18 @@
 
 .full {
   width: 100%;
+}
+
+/* The stock primary button is near-black, which disappears against this dark card. */
+.card .cta {
+  background: #f5a623;
+  border-color: #f5a623;
+  color: #181512;
+}
+
+.card .cta:hover {
+  background: #ffb93d;
+  border-color: #ffb93d;
 }
 
 .backLink {

@@ -72,7 +72,7 @@ export default async function SuperLoginPage({
 
           <ButtonLink
             href="/api/auth/login?next=/dash/ships"
-            className={styles.full}
+            className={`${styles.full} ${styles.cta}`}
           >
             {user ? "switch to Slack account" : "continue with Slack (Hack Club)"}
           </ButtonLink>

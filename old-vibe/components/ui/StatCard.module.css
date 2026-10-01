@@ -37,3 +37,14 @@
   font-size: 13.5px;
   color: var(--muted);
 }
+
+.card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--drop);
+}

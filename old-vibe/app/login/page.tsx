@@ -39,7 +39,7 @@ export default async function LoginPage({
       <SiteNav />
       <div className={styles.center}>
         <div className={styles.card}>
-          <h1 className={styles.head}>Login to Old Vibe</h1>
+          <h1 className={styles.title}>Login to Old Vibe</h1>
           <p className={styles.body}>
             You sign in with your Hack Club account. It is how we know your hours are yours, and
             where to send your paper.
