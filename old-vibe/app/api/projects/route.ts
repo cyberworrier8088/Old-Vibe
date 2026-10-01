@@ -1,4 +1,4 @@
-import { and, arrayOverlaps, eq, ilike, inArray, isNull, isNotNull, ne, or } from "drizzle-orm";
+import { and, arrayOverlaps, eq, ilike, inArray, isNull, isNotNull, ne, notInArray, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { validateSubmission } from "@/lib/superviewer/payload";
@@ -147,6 +147,8 @@ export async function POST(request: Request) {
       .where(
         and(
           isNotNull(projects.submittedAt),
+          // A rejected or withdrawn project released its hours.
+          or(isNull(projects.decision), notInArray(projects.decision, ["rejected", "withdrawn"])),
           body.id ? ne(projects.id, body.id) : undefined,
           sameOwner,
           arrayOverlaps(projects.hackatimeProjects, candidate.hackatimeProjects),

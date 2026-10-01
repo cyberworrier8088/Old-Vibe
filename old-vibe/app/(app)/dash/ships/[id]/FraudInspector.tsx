@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { HackatimeHeartbeat } from "@/lib/hackatime/client";
 import type { FraudAnalysis } from "@/lib/hackatime/projects";
+import { STATE_LABEL, claimsHours, sharedHackatimeProjects, siblingState } from "@/lib/review/overlap";
 import type { SiblingProject } from "./ReviewTabs";
 import styles from "./page.module.css";
 
@@ -394,19 +395,22 @@ export function FraudInspector({
                   Cross-Project Overlap Check
                 </h3>
                 <p className={styles.doubleDipSubtitle}>
-                  This maker has {siblingProjects.length} other Old-Vibe submission(s). Review closely to ensure they are not claiming the same Hackatime project for multiple Old-Vibe ships.
+                  This maker has {siblingProjects.length} other project(s), {siblingProjects.filter(claimsHours).length} of them claiming hours. Only a project that was submitted and is still waiting, approved or sent back for changes can double dip.
                 </p>
               </div>
             </div>
           </div>
           <div className={styles.doubleDipList}>
             {siblingProjects.map(sp => {
-              const hasOverlap = sp.hackatimeProjects.some(shp => claimedProjects.includes(shp));
+              const shared = sharedHackatimeProjects(sp, claimedProjects);
+              const live = claimsHours(sp);
+              const hasOverlap = live && shared.length > 0;
+              const state = siblingState(sp);
               return (
                 <div key={sp.id} className={[styles.doubleDipItem, hasOverlap ? styles.doubleDipItemOverlap : null].filter(Boolean).join(" ")}>
                   <div className={styles.doubleDipItemMain}>
                     <span className={styles.doubleDipItemTitle}>{sp.title}</span>
-                    <span className={styles.doubleDipItemStatus}>{sp.decision?.toUpperCase() || "PENDING"}</span>
+                    <span className={styles.doubleDipItemStatus}>{STATE_LABEL[state]}</span>
                   </div>
                   <div className={styles.doubleDipItemDetails}>
                     <span className={styles.doubleDipItemDetail}>
@@ -418,7 +422,11 @@ export function FraudInspector({
                   </div>
                   {hasOverlap ? (
                     <div className={styles.doubleDipWarning}>
-                      FLAG: This project claims the exact same Hackatime project name as the current submission!
+                      FLAG: this project is {STATE_LABEL[state].toLowerCase()} and claims the same Hackatime project ({shared.join(", ")}) as the current submission.
+                    </div>
+                  ) : shared.length > 0 ? (
+                    <div className={styles.doubleDipNote}>
+                      Lists the same Hackatime project name ({shared.join(", ")}), but it is {STATE_LABEL[state].toLowerCase()}, so it holds no hours. Not a double dip.
                     </div>
                   ) : null}
                 </div>
