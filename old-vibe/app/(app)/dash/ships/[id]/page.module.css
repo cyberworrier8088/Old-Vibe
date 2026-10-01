@@ -15,10 +15,25 @@
   margin-bottom: var(--s4);
 }
 
-.headerTopRow {
+/* Back to the queue, jump to the decision, open the next submission. */
+.actionBar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--s3);
+  /* Sits just above the header card rather than a full section gap away. */
+  margin-bottom: calc(var(--s2) - var(--s5));
+}
+
+.actionBarLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+/* Long labels for wide screens, short ones for phones. */
+.narrow {
+  display: none;
 }
 
 .backLink {
@@ -42,8 +57,15 @@
   gap: var(--s3);
 }
 
+.eventRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px var(--s3);
+  margin-bottom: 6px;
+}
+
 .eventLabel {
-  margin-bottom: 5px;
   color: var(--muted);
   font-family: var(--data);
   font-size: 11px;
@@ -1737,8 +1759,9 @@
   font-weight: 700;
   color: var(--cream);
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: 0 6px;
 }
 
 .statTileSub {
@@ -2167,7 +2190,19 @@
   line-height: 1.45;
   max-height: 240px;
   overflow-y: auto;
+  /* Long file paths wrap instead of running out of the box. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: transparent;
+}
+
+/* The payload of an inspected heartbeat, directly under its row. */
+.trDetail {
+  background: rgb(var(--warn-rgb) / 0.06);
+}
+
+.heartbeatTable .trDetail td {
+  padding-top: 0;
 }
 
 /* Reviewer Decision & Authenticity Deck */
@@ -2469,13 +2504,7 @@
   border-radius: 4px;
 }
 
-/* Header status, download tools */
-.headerStatusRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+/* Download tools */
 .downloadTools {
   position: relative;
   display: inline-flex;
@@ -2603,6 +2632,7 @@
 
 .tdTime,
 .tdProject,
+.tdLines,
 .tdLang,
 .tdCat,
 .tdEditor {
@@ -2672,14 +2702,35 @@
   color: var(--lilac);
 }
 
-/* Mobile Responsiveness */
+/* One column on tablets and phones */
 @media (max-width: 980px) {
   .workstationGrid {
-    grid-template-columns: 1fr;
+    /* Not plain 1fr: that track cannot shrink below its widest content, so one long README line
+       would stretch the whole page sideways. */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .stickyDeck {
     position: static;
+  }
+
+  /* The decision form now sits below the evidence, so the bar stays on screen to reach it. */
+  .actionBar {
+    --gutter: 40px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin: 0 calc(var(--gutter) * -1) calc(var(--s2) - var(--s5));
+    padding: 6px var(--gutter);
+    padding-top: max(6px, env(safe-area-inset-top));
+    background: var(--night);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Jumps land below the sticky bar, not under it. */
+  .decisionAnchor,
+  .leftColumn {
+    scroll-margin-top: 72px;
   }
 }
 
@@ -2780,4 +2831,184 @@
 .nextLink:hover {
   background: var(--soft);
   color: var(--on-lamp);
+}
+
+.nextLink,
+.decideJump {
+  white-space: nowrap;
+}
+
+/* Shown only once the decision form drops below the evidence. */
+.decideJump {
+  display: none;
+  align-items: center;
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  color: var(--cream);
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+
+.decideJump:hover {
+  color: var(--cream);
+  border-color: var(--glow);
+}
+
+/* After the rule above, so it wins once the layout is one column. */
+@media (max-width: 980px) {
+  .decideJump {
+    display: inline-flex;
+  }
+}
+
+/* Phones */
+@media (max-width: 760px) {
+  .wide {
+    display: none;
+  }
+
+  .narrow {
+    display: inline;
+  }
+
+  .actionBar {
+    --gutter: 16px;
+  }
+
+  .headerDeck {
+    padding: 14px 16px;
+  }
+
+  .projectTitleHeading {
+    font-size: 22px;
+  }
+
+  /* All three tabs stay in view: equal columns, with the badge under the label. */
+  .tabNav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .tabBtn {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 54px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  /* Two tiles across instead of one, so the figures are not a long scroll. */
+  .ariStatsRibbon {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  /* One row of filters that scrolls sideways, rather than four rows of buttons. */
+  .quickFilterToolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .quickFilterToolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quickFilterBtn {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* Nine columns do not fit a phone, so each heartbeat becomes a compact block:
+     time and status, then the file, then the details. */
+  .heartbeatTable thead {
+    display: none;
+  }
+
+  .heartbeatTable,
+  .heartbeatTable tbody {
+    display: block;
+  }
+
+  .heartbeatTable tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .heartbeatTable td {
+    padding: 0;
+    border: 0;
+  }
+
+  .tdTime {
+    order: 1;
+    flex: 1 1 auto;
+  }
+
+  .tdWrite {
+    order: 2;
+  }
+
+  .tdEntity {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .tdProject,
+  .tdLines,
+  .tdCat,
+  .tdLang,
+  .tdEditor {
+    order: 4;
+    font-size: 10.5px;
+  }
+
+  .tdActions {
+    order: 5;
+    margin-left: auto;
+  }
+
+  .heartbeatTable .trDetail {
+    padding-top: 0;
+  }
+
+  .trDetail td {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* Fingers need bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+  .backLink,
+  .nextLink {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .decideJump {
+    min-height: 40px;
+  }
+
+  .quickActionBtn,
+  .quickActionBtnPrimary,
+  .readmeBtn,
+  .quickFilterBtn,
+  .pageBtn,
+  .inspectRowBtn,
+  .decisionPill {
+    min-height: 44px;
+  }
 }

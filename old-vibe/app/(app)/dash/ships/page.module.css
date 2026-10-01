@@ -197,3 +197,110 @@
   color: var(--bad) !important;
   font-weight: 700;
 }
+
+.right {
+  text-align: right;
+}
+
+/* Phones: the filters scroll sideways and each submission becomes a card. */
+@media (max-width: 760px) {
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .queueStat {
+    margin-left: 0;
+  }
+
+  .wrap {
+    overflow: visible;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .table {
+    min-width: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody {
+    display: block;
+  }
+
+  .table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "project project"
+      "maker status"
+      "when hours"
+      "action action";
+    gap: 8px 12px;
+    margin-bottom: var(--s3);
+    padding: 14px;
+    background: var(--night);
+    border: 1px solid var(--rule);
+    border-radius: var(--wobble-sm);
+  }
+
+  .table tr.rowQueued {
+    border-color: rgb(var(--warn-rgb) / 0.4);
+  }
+
+  .table td,
+  .table tr:hover td {
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .cellProject {
+    grid-area: project;
+  }
+
+  .cellMaker {
+    grid-area: maker;
+  }
+
+  .cellStatus {
+    grid-area: status;
+    text-align: right;
+  }
+
+  .cellWhen {
+    grid-area: when;
+    font-size: 13px;
+  }
+
+  .cellHours {
+    grid-area: hours;
+    text-align: right;
+    font-size: 13px;
+  }
+
+  .cellAction {
+    grid-area: action;
+  }
+
+  .cellAction a {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+}

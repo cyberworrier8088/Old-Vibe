@@ -91,14 +91,17 @@ export function EvidencePanel({ review }: { review: Promise<ReviewEvidence> }) {
                     className={ship.match === "same-repo" ? styles.rowBad : ship.match === "same-name" ? styles.rowWarn : undefined}
                   >
                     <td className={styles.program}>{ship.ysws}</td>
-                    <td>{MATCH_LABEL[ship.match]}</td>
+                    <td className={styles.match}>{MATCH_LABEL[ship.match]}</td>
                     <td className={styles.link}>
                       <a href={ship.codeUrl} target="_blank" rel="noreferrer">
                         {short(ship.codeUrl)}
                       </a>
                     </td>
-                    <td className={styles.num}>{ship.hours ?? "?"}</td>
-                    <td className={styles.num}>{ship.approvedAt ? DAY.format(new Date(ship.approvedAt * 1000)) : "?"}</td>
+                    <td className={`${styles.num} ${styles.hours}`}>{ship.hours != null ? `${ship.hours}h` : "?"}</td>
+                    <td className={`${styles.num} ${styles.approved}`}>
+                      <span className={styles.cellLabel}>approved </span>
+                      {ship.approvedAt ? DAY.format(new Date(ship.approvedAt * 1000)) : "?"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

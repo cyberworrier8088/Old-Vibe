@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
+import { AI_TOLERANCE_PERCENT } from "@/lib/hackatime/ai";
 import type { HackatimeHeartbeat } from "@/lib/hackatime/client";
 import type { FraudAnalysis } from "@/lib/hackatime/projects";
 import { STATE_LABEL, claimsHours, sharedHackatimeProjects, siblingState } from "@/lib/review/overlap";
@@ -93,6 +94,8 @@ function formatDuration(minutes: number): string {
   const m = minutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
+
+const TONE_COLOR = { ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)" } as const;
 
 export function FraudInspector({
   projectId,
@@ -217,6 +220,13 @@ export function FraudInspector({
   }, [fraudAnalysis?.hourlyDistribution]);
 
   const aiAudit = fraudAnalysis?.aiAudit;
+  const aiUnit = aiAudit?.basis === "lines" ? "of changed lines" : "of heartbeats";
+  // Over the allowance is a problem; a trace inside it is only worth a look.
+  const aiTone: keyof typeof TONE_COLOR = aiAudit?.isAiDetected
+    ? "bad"
+    : (aiAudit?.aiPercentage ?? 0) > 0
+      ? "warn"
+      : "ok";
 
   return (
     <div className={styles.fraudSection}>
@@ -454,8 +464,10 @@ export function FraudInspector({
               <div>
                 <h3 className={styles.aiDetectionTitle}>
                   {aiAudit.isAiDetected
-                    ? `AI / Agent Scaffolding Detected (${aiAudit.aiPercentage}% AI Coded)`
-                    : "Verified 100% Handcrafted Code"}
+                    ? `AI-written code: ${aiAudit.aiPercentage}% ${aiUnit}`
+                    : aiAudit.aiPercentage > 0
+                      ? `Hand-written, within the ${AI_TOLERANCE_PERCENT}% AI allowance`
+                      : "No AI-written code found"}
                 </h3>
                 <p className={styles.aiDetectionSubtitle}>
                   {aiAudit.verdict}
@@ -466,10 +478,10 @@ export function FraudInspector({
             <div className={styles.aiRatioMeter}>
               <div className={styles.aiMeterLabels}>
                 <span style={{ color: "var(--ok)" }}>
-                  Handcrafted: {aiAudit.handcraftedPercentage}%
+                  Hand-written: {aiAudit.handcraftedPercentage}%
                 </span>
-                <span style={{ color: aiAudit.aiPercentage > 0 ? "var(--bad)" : "var(--lilac)" }}>
-                  AI Coded: {aiAudit.aiPercentage}%
+                <span style={{ color: aiAudit.aiPercentage > 0 ? TONE_COLOR[aiTone] : "var(--lilac)" }}>
+                  AI: {aiAudit.aiPercentage}%
                 </span>
               </div>
               <div className={styles.aiMeterTrack}>
@@ -488,7 +500,7 @@ export function FraudInspector({
           {aiAudit.isAiDetected ? (
             <div className={styles.aiTracesBox}>
               <span className={styles.aiTracesHeading}>
-                Detected AI Traces & Indicators ({aiAudit.aiHeartbeatCount} flagged heartbeats):
+                What points to AI ({aiAudit.aiHeartbeatCount} heartbeats):
               </span>
               <div className={styles.aiTracesPills}>
                 {aiAudit.aiReasons.map((reason) => (
@@ -508,20 +520,25 @@ export function FraudInspector({
       {/* Fraud Stats Metrics Ribbon */}
       <div className={styles.ariStatsRibbon}>
         <div className={styles.statTile}>
-          <span className={styles.statTileLabel}>AI Coding Detected</span>
-          <span
-            className={styles.statTileVal}
-            style={{
-              color: (aiAudit?.aiPercentage ?? 0) > 0 ? "var(--bad)" : "var(--ok)",
-            }}
-          >
+          <span className={styles.statTileLabel}>
+            {aiAudit?.basis === "lines" ? "AI-written lines" : "AI heartbeats"}
+          </span>
+          <span className={styles.statTileVal} style={{ color: TONE_COLOR[aiTone] }}>
             {aiAudit?.aiPercentage ?? 0}%
             <span className={styles.statTileSub}>
-              ({aiAudit?.aiHeartbeatCount ?? 0} AI hb)
+              {aiAudit?.basis === "lines"
+                ? `${aiAudit.aiLines} of ${aiAudit.aiLines + aiAudit.humanLines} lines`
+                : `${aiAudit?.aiHeartbeatCount ?? 0} heartbeats`}
             </span>
           </span>
           <span className={styles.statTileSub2}>
-            {(aiAudit?.aiPercentage ?? 0) > 0 ? "Violation detected" : "Handcrafted"}
+            {aiTone === "bad"
+              ? aiAudit?.basis === "lines"
+                ? `Over the ${AI_TOLERANCE_PERCENT}% allowance`
+                : "AI involvement found"
+              : aiTone === "warn"
+                ? `Within the ${AI_TOLERANCE_PERCENT}% allowance`
+                : "None found"}
           </span>
         </div>
 
@@ -596,9 +613,74 @@ export function FraudInspector({
             <span className={styles.statTileSub}>source</span>
           </span>
           <span className={styles.statTileSub2}>
-            {fraudAnalysis?.suspiciousLineJumpsCount ?? 0} spikes · Max {fraudAnalysis?.maxLineJump ?? 0} lines
+            {fraudAnalysis?.suspiciousLineJumpsCount ?? 0}{" "}
+            {fraudAnalysis?.suspiciousLineJumpsCount === 1 ? "spike" : "spikes"} · Max{" "}
+            {fraudAnalysis?.maxLineJump ?? 0} lines
           </span>
         </div>
+
+        {fraudAnalysis ? (
+          <>
+            <div className={styles.statTile}>
+              <span className={styles.statTileLabel}>Idle editor</span>
+              <span
+                className={styles.statTileVal}
+                style={{ color: fraudAnalysis.idleFlagged ? "var(--bad)" : "var(--cream)" }}
+              >
+                {fraudAnalysis.idleMinutes}m
+                <span className={styles.statTileSub}>frozen cursor</span>
+              </span>
+              <span className={styles.statTileSub2}>
+                {fraudAnalysis.idleFlagged
+                  ? `Longest run ${fraudAnalysis.longestIdleMinutes}m: check for a key presser`
+                  : `Longest run ${fraudAnalysis.longestIdleMinutes}m`}
+              </span>
+            </div>
+
+            <div className={styles.statTile}>
+              <span className={styles.statTileLabel}>Paste bursts</span>
+              <span
+                className={styles.statTileVal}
+                style={{
+                  color:
+                    fraudAnalysis.pasteBurstCount >= 3
+                      ? "var(--bad)"
+                      : fraudAnalysis.pasteBurstCount > 0
+                        ? "var(--warn)"
+                        : "var(--cream)",
+                }}
+              >
+                {fraudAnalysis.pasteBurstCount}
+                <span className={styles.statTileSub}>60+ lines in seconds</span>
+              </span>
+              <span className={styles.statTileSub2}>
+                {fraudAnalysis.pasteBurstCount >= 3
+                  ? "Likely pasted code"
+                  : fraudAnalysis.pasteBurstCount > 0
+                    ? "Ask the maker about these"
+                    : "None found"}
+              </span>
+            </div>
+
+            <div className={styles.statTile}>
+              <span className={styles.statTileLabel}>Coding pace</span>
+              <span
+                className={styles.statTileVal}
+                style={{ color: fraudAnalysis.lowOutput ? "var(--bad)" : "var(--cream)" }}
+              >
+                {fraudAnalysis.linesPerHour ?? "?"}
+                <span className={styles.statTileSub}>changed lines an hour</span>
+              </span>
+              <span className={styles.statTileSub2}>
+                {fraudAnalysis.linesPerHour === null
+                  ? "The editor does not report lines"
+                  : fraudAnalysis.lowOutput
+                    ? "Very little code for the time"
+                    : `${fraudAnalysis.changedLines.toLocaleString("en-GB")} lines in all`}
+              </span>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {/* 24-Hour Hourly Activity Punchcard Chart */}
@@ -1003,106 +1085,100 @@ export function FraudInspector({
                       : entity;
 
                   return (
-                    <tr
-                      key={rowId}
-                      className={[
-                        isExpanded ? styles.trExpanded : null,
-                        isAi ? styles.trAiRow : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    >
-                      <td className={styles.tdTime}>{formatTimestamp(hb.time)}</td>
-                      <td className={styles.tdProject}>{hb.project || "—"}</td>
-                      <td className={styles.tdEntity} title={entity}>
-                        <span className={styles.filenameText}>{filename}</span>
-                        {entity !== filename ? (
-                          <span className={styles.entityPathText}>{entity}</span>
-                        ) : null}
-                      </td>
-                      <td className={styles.tdWrite}>
-                        <span
-                          className={
-                            hb.is_write ? styles.tagWrite : styles.tagRead
-                          }
-                        >
-                          {hb.is_write ? "WRITE" : "READ"}
-                        </span>
-                        {isNoise ? (
-                          <span className={styles.tagNoise} style={{ marginLeft: 4 }}>
-                            NOISE
+                    <Fragment key={rowId}>
+                      <tr
+                        className={[
+                          isExpanded ? styles.trExpanded : null,
+                          isAi ? styles.trAiRow : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      >
+                        <td className={styles.tdTime}>{formatTimestamp(hb.time)}</td>
+                        <td className={styles.tdProject}>{hb.project || "—"}</td>
+                        <td className={styles.tdEntity} title={entity}>
+                          <span className={styles.filenameText}>{filename}</span>
+                          {entity !== filename ? (
+                            <span className={styles.entityPathText}>{entity}</span>
+                          ) : null}
+                        </td>
+                        <td className={styles.tdWrite}>
+                          <span
+                            className={
+                              hb.is_write ? styles.tagWrite : styles.tagRead
+                            }
+                          >
+                            {hb.is_write ? "WRITE" : "READ"}
                           </span>
-                        ) : null}
-                        {isSpike ? (
-                          <span className={styles.tagSpike} style={{ marginLeft: 4 }}>
-                            SPIKE
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className={styles.tdLang}>
-                        {typeof hb.lines === "number" ? `${hb.lines} lines` : "—"}
-                      </td>
-                      <td className={styles.tdCat}>
-                        {isAi ? (
-                          <span className={styles.tagAi}>
-                            AI ({hb.category || "ai"})
-                          </span>
-                        ) : (
-                          <span className={styles.tagNormal}>
-                            {hb.category || "coding"}
-                          </span>
-                        )}
-                      </td>
-                      <td className={styles.tdLang}>{hb.language || "—"}</td>
-                      <td className={styles.tdEditor}>
-                        <span style={{ color: isAi ? "var(--bad)" : "inherit" }}>
-                          {hb.editor || "—"}
-                        </span>{" "}
-                        · {hb.operating_system || "—"}
-                      </td>
-                      <td className={styles.tdActions}>
-                        <button
-                          type="button"
-                          className={styles.inspectRowBtn}
-                          onClick={() =>
-                            setExpandedHeartbeatId(isExpanded ? null : rowId)
-                          }
-                          title="Inspect raw heartbeat object"
-                        >
-                          {isExpanded ? "Hide" : "Inspect"}
-                        </button>
-                      </td>
-                    </tr>
+                          {isNoise ? (
+                            <span className={styles.tagNoise} style={{ marginLeft: 4 }}>
+                              NOISE
+                            </span>
+                          ) : null}
+                          {isSpike ? (
+                            <span className={styles.tagSpike} style={{ marginLeft: 4 }}>
+                              SPIKE
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className={styles.tdLines}>
+                          {typeof hb.lines === "number" ? `${hb.lines} lines` : "—"}
+                        </td>
+                        <td className={styles.tdCat}>
+                          {isAi ? (
+                            <span className={styles.tagAi}>
+                              AI ({hb.category || "ai"})
+                            </span>
+                          ) : (
+                            <span className={styles.tagNormal}>
+                              {hb.category || "coding"}
+                            </span>
+                          )}
+                        </td>
+                        <td className={styles.tdLang}>{hb.language || "—"}</td>
+                        <td className={styles.tdEditor}>
+                          <span style={{ color: isAi ? "var(--bad)" : "inherit" }}>
+                            {hb.editor || "—"}
+                          </span>{" "}
+                          · {hb.operating_system || "—"}
+                        </td>
+                        <td className={styles.tdActions}>
+                          <button
+                            type="button"
+                            className={styles.inspectRowBtn}
+                            onClick={() =>
+                              setExpandedHeartbeatId(isExpanded ? null : rowId)
+                            }
+                            title="Inspect raw heartbeat object"
+                          >
+                            {isExpanded ? "Hide" : "Inspect"}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded ? (
+                        <tr className={styles.trDetail}>
+                          <td colSpan={9}>
+                            <div className={styles.rawJsonDrawer}>
+                              <div className={styles.rawJsonHeader}>
+                                <span>Raw heartbeat payload</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedHeartbeatId(null)}
+                                  className={styles.closeDrawerBtn}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                              <pre className={styles.rawJsonPre}>{JSON.stringify(hb, null, 2)}</pre>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>
             </table>
-
-            {expandedHeartbeatId ? (
-              <div className={styles.rawJsonDrawer}>
-                <div className={styles.rawJsonHeader}>
-                  <span>Raw Heartbeat Payload Inspection</span>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedHeartbeatId(null)}
-                    className={styles.closeDrawerBtn}
-                  >
-                    Close
-                  </button>
-                </div>
-                <pre className={styles.rawJsonPre}>
-                  {JSON.stringify(
-                    pageItems.find(
-                      (h, idx) =>
-                        (h.id ? String(h.id) : `${h.time}-${idx}`) ===
-                        expandedHeartbeatId,
-                    ) || {},
-                    null,
-                    2,
-                  )}
-                </pre>
-              </div>
-            ) : null}
           </div>
         )}
 

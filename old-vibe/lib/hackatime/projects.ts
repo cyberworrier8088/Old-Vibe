@@ -14,7 +14,7 @@ import {
   getHackatimeProjectDetails,
 } from "./client";
 import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
-import { AI_PATH_INDICATORS, attributeAi, isAiHeartbeat } from "./ai";
+import { AI_PATH_INDICATORS, AI_TOLERANCE_PERCENT, attributeAi, isAiHeartbeat } from "./ai";
 import { totalsFrom } from "./duration";
 import { formatHours } from "./format";
 import { findIdleRuns } from "./idle";
@@ -55,8 +55,7 @@ export type SessionCluster = {
   topLanguage?: string;
 };
 
-/** Old-Vibe allows a small slip: up to this share of changed lines may be AI-written. */
-export const AI_TOLERANCE_PERCENT = 1;
+export { AI_TOLERANCE_PERCENT };
 
 export type AiDetectionAudit = {
   isAiDetected: boolean;
@@ -103,9 +102,13 @@ export type FraudAnalysis = {
   /** Minutes of write heartbeats with a frozen cursor: what an auto key presser leaves behind. */
   idleMinutes: number;
   longestIdleMinutes: number;
+  /** A frozen-cursor run of 30 minutes or more, or idle writes over a fifth of tracked time. */
+  idleFlagged: boolean;
   changedLines: number;
   /** Null when the editor does not report changed lines, so nothing can be said. */
   linesPerHour: number | null;
+  /** Under four changed lines an hour across four or more tracked hours. */
+  lowOutput: boolean;
   maxLineJump: number;
   noiseEntitiesCount: number;
   noiseEntityRatio: number;
@@ -1095,8 +1098,10 @@ async function buildMakerProjectBreakdown(
       pasteBurstCount,
       idleMinutes: Math.round(idle.idleSeconds / 60),
       longestIdleMinutes: Math.round(idle.longestSeconds / 60),
+      idleFlagged,
       changedLines,
       linesPerHour,
+      lowOutput,
       maxLineJump,
       noiseEntitiesCount,
       noiseEntityRatio,
@@ -1146,8 +1151,10 @@ async function buildMakerProjectBreakdown(
       pasteBurstCount: 0,
       idleMinutes: 0,
       longestIdleMinutes: 0,
+      idleFlagged: false,
       changedLines: 0,
       linesPerHour: null,
+      lowOutput: false,
       maxLineJump: 0,
       noiseEntitiesCount: 0,
       noiseEntityRatio: 0,

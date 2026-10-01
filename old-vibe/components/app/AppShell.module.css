@@ -145,6 +145,27 @@
     padding: 20px 16px 8px;
   }
 
+  /* The theme switch stays beside the title, and a page action gets its own row below,
+     so a long title wraps in place instead of pushing everything down a line. */
+  .top {
+    gap: var(--s3);
+  }
+
+  .title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 22px;
+  }
+
+  .topActions {
+    display: contents;
+  }
+
+  .topActions > :not(:first-child) {
+    order: 1;
+    flex: 1 1 100%;
+  }
+
   .bar {
     display: block;
   }

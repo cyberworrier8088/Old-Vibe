@@ -65,7 +65,8 @@ export function ReviewTabs({
             .join(" ")}
           onClick={() => setActiveTab("project")}
         >
-          <span>Project evidence</span>
+          <span className={styles.wide}>Project evidence</span>
+          <span className={styles.narrow}>Evidence</span>
           <Suspense fallback={null}>
             <EvidenceBadge review={review} />
           </Suspense>
@@ -80,7 +81,8 @@ export function ReviewTabs({
             .join(" ")}
           onClick={() => setActiveTab("activity")}
         >
-          <span>Coding activity</span>
+          <span className={styles.wide}>Coding activity</span>
+          <span className={styles.narrow}>Activity</span>
           <span className={styles.tabBadge}>{totalHoursFormatted}</span>
         </button>
 
@@ -93,7 +95,8 @@ export function ReviewTabs({
             .join(" ")}
           onClick={() => setActiveTab("fraud")}
         >
-          <span>Integrity review</span>
+          <span className={styles.wide}>Integrity review</span>
+          <span className={styles.narrow}>Integrity</span>
           {audit.fraudAnalysis ? (
             <span
               className={[

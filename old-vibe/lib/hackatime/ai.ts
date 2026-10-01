@@ -32,6 +32,9 @@ export const AI_PATH_INDICATORS = [
 /** Below this many changed lines there is too little to say what share was AI. */
 export const MIN_LINES_FOR_SHARE = 20;
 
+/** Old-Vibe allows a small slip: up to this share of changed lines may be AI-written. */
+export const AI_TOLERANCE_PERCENT = 1;
+
 const positive = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 0);
 
 /** True when anything on the heartbeat says the AI was involved. */
