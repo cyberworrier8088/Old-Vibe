@@ -13,9 +13,7 @@ export function Panel({ className, children, ...rest }: HTMLAttributes<HTMLDivEl
 export function PanelLabel({ children }: { children: ReactNode }) {
   return (
     <span className={styles.label}>
-      <span className={styles.star} aria-hidden="true">
-        ✦
-      </span>
+      <span className={styles.star} aria-hidden="true" />
       {children}
     </span>
   );

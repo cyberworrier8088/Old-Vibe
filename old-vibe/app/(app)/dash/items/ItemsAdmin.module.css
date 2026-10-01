@@ -81,7 +81,9 @@
   height: 40px;
   border-radius: 4px;
   background: var(--raised);
-  font-size: 15px;
+  font-size: 10px;
+  font-family: var(--data);
+  color: var(--lilac);
 }
 
 .name {

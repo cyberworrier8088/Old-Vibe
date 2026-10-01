@@ -124,7 +124,7 @@ export function Queue({ rows }: { rows: QueueRow[] }) {
                   value={tracking[order.id] ?? order.tracking ?? ""}
                   onChange={(event) => setTracking({ ...tracking, [order.id]: event.target.value })}
                 />
-                <Button variant="quiet" loading={working} onClick={() => patch(order.id, { status: "ready_to_fulfil", tracking: tracking[order.id] ?? order.tracking ?? "" })} className={styles.ready}>✓ ready to fulfil</Button>
+                <Button variant="quiet" loading={working} onClick={() => patch(order.id, { status: "ready_to_fulfil", tracking: tracking[order.id] ?? order.tracking ?? "" })} className={styles.ready}>ready to fulfil</Button>
                 <Button variant="quiet" loading={working} onClick={() => patch(order.id, { status: "packing", tracking: tracking[order.id] ?? order.tracking ?? "" })}>packing</Button>
                 <Button variant="quiet" loading={working} onClick={() => patch(order.id, { status: "posted", tracking: tracking[order.id] ?? order.tracking ?? "" })}>mark posted</Button>
                 <Button variant="quiet" loading={working} onClick={() => patch(order.id, { status: "needs_address" })}>needs address</Button>

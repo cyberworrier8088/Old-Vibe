@@ -17,7 +17,9 @@
   display: grid;
   place-items: center;
   height: 240px;
-  font-size: 40px;
+  font-size: 13px;
+  font-family: var(--data);
+  color: var(--lilac);
   border-radius: var(--wobble-sm);
   background: var(--raised);
   border: 1px solid var(--rule);

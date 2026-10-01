@@ -40,7 +40,9 @@
   flex: none;
   width: 64px;
   height: 48px;
-  font-size: 18px;
+  font-size: 11px;
+  font-family: var(--data);
+  color: var(--lilac);
   border-radius: 4px;
   background: var(--raised);
 }

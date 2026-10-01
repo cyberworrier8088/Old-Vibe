@@ -183,7 +183,7 @@ export function ItemsAdmin({ items }: { items: Item[] }) {
                   <img src={item.imageUrl} alt="" className={styles.thumb} />
                 ) : (
                   <span className={styles.blank} aria-hidden="true">
-                    🌙
+                    none
                   </span>
                 )}
                 <span className={styles.name}>

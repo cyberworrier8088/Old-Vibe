@@ -77,7 +77,7 @@ export default async function ShopPage() {
                   <img src={item.imageUrl} alt="" className={styles.thumb} />
                 ) : (
                   <span className={styles.blank} aria-hidden="true">
-                    📦
+                    no image
                   </span>
                 )}
                 <span className={styles.name}>{item.name}</span>

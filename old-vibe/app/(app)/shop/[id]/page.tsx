@@ -41,7 +41,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             <img src={item.imageUrl} alt="" className={styles.image} />
           ) : (
             <span className={styles.blank} aria-hidden="true">
-              🌙
+              no image
             </span>
           )}
           {item.description ? <p className={styles.description}>{item.description}</p> : null}

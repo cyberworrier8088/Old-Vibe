@@ -15,7 +15,7 @@ export function Section({
 }) {
   return (
     <Reveal id={id} className={styles.section}>
-      <span className={styles.label}>✦ {label}</span>
+      <span className={styles.label}>{label}</span>
       <div className={styles.body}>{children}</div>
     </Reveal>
   );

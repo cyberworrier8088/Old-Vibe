@@ -76,7 +76,7 @@ export function ThumbnailField({
           <img src={value} alt="" className={styles.preview} />
         ) : (
           <span className={styles.placeholder} aria-hidden="true">
-            🌙
+            image
           </span>
         )}
         <span className={styles.words}>

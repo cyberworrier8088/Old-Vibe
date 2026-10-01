@@ -346,7 +346,7 @@ export function FraudInspector({
         <div className={styles.deductionCard}>
           <div className={styles.deductionHeader}>
             <div className={styles.deductionTitleGroup}>
-              <span className={styles.deductionIcon}>⚠️</span>
+              <span className={styles.deductionIcon} aria-hidden="true">!</span>
               <div>
                 <h4 className={styles.deductionTitle}>Double Dipping Deduction Assistant</h4>
                 <p className={styles.deductionSubtitle}>

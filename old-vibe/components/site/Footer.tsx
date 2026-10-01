@@ -20,7 +20,7 @@ export function Footer() {
     <footer className={styles.footer}>
       <div className={styles.brandRow}>
         <OldManFace size={22} />
-        <span className={styles.motto}>OldVibe is made with ♥ by teenagers, for teenagers.</span>
+        <span className={styles.motto}>Old Vibe is made by teenagers, for teenagers.</span>
       </div>
       <nav className={styles.links} aria-label="elsewhere">
         {LINKS.map((link) => (

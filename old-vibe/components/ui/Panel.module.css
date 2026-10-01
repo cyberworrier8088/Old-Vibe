@@ -19,7 +19,12 @@
 }
 
 .star {
-  margin-right: 6px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  background: var(--orchid);
+  transform: rotate(45deg);
 }
 
 .panel {
