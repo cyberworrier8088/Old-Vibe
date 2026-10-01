@@ -37,6 +37,17 @@ export type HackatimeHeartbeat = {
   entity?: string;
   is_write?: boolean;
   lines?: number;
+  lineno?: number;
+  cursorpos?: number;
+  // Hackatime's own record of AI involvement, when the editor plugin reports it.
+  ai_model?: string;
+  ai_session?: string;
+  ai_subscription_plan?: string;
+  ai_line_changes?: number;
+  human_line_changes?: number;
+  ai_input_tokens?: number;
+  ai_output_tokens?: number;
+  ai_prompt_length?: number;
 };
 
 function base(): string {

@@ -14,7 +14,10 @@ import {
   getHackatimeProjectDetails,
 } from "./client";
 import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
+import { AI_PATH_INDICATORS, attributeAi, isAiHeartbeat } from "./ai";
+import { totalsFrom } from "./duration";
 import { formatHours } from "./format";
+import { findIdleRuns } from "./idle";
 
 export { formatHours };
 
@@ -52,11 +55,20 @@ export type SessionCluster = {
   topLanguage?: string;
 };
 
+/** Old-Vibe allows a small slip: up to this share of changed lines may be AI-written. */
+export const AI_TOLERANCE_PERCENT = 1;
+
 export type AiDetectionAudit = {
   isAiDetected: boolean;
+  /** What aiPercentage is a share of: changed lines when Hackatime reports them, else heartbeats. */
+  basis: "lines" | "heartbeats";
   aiHeartbeatCount: number;
   aiPercentage: number;
   handcraftedPercentage: number;
+  aiLines: number;
+  humanLines: number;
+  aiSessions: number;
+  aiOutputTokens: number;
   aiEditorsDetected: string[];
   aiReasons: string[];
   verdict: string;
@@ -88,6 +100,12 @@ export type FraudAnalysis = {
   suspiciousLineJumpsCount: number;
   /** Large additions to one file within seconds: how pasted code looks in a heartbeat stream. */
   pasteBurstCount: number;
+  /** Minutes of write heartbeats with a frozen cursor: what an auto key presser leaves behind. */
+  idleMinutes: number;
+  longestIdleMinutes: number;
+  changedLines: number;
+  /** Null when the editor does not report changed lines, so nothing can be said. */
+  linesPerHour: number | null;
   maxLineJump: number;
   noiseEntitiesCount: number;
   noiseEntityRatio: number;
@@ -360,27 +378,6 @@ async function buildMakerProjectBreakdown(
       "v0",
     ];
 
-    const AI_PATH_INDICATORS = [
-      "antigravity ide",
-      ".gemini",
-      "/brain/",
-      "\\brain\\",
-      ".cursor",
-      ".windsurf",
-      ".continue",
-      "task.md",
-      "walkthrough.md",
-      "implementation_plan.md",
-      ".claude",
-      ".cursorrules",
-      ".windsurfrules",
-      ".specstory",
-      "copilot-instructions.md",
-      "copilot-chat",
-      "chat.json",
-      ".aider",
-    ];
-
     const NOISE_PATH_PATTERNS = [
       "node_modules",
       "/vendor/",
@@ -467,10 +464,12 @@ async function buildMakerProjectBreakdown(
         }
       }
 
-      if ((hb as { ai_model?: string }).ai_model) {
+      if (hb.ai_model) {
         hbIsAi = true;
-        aiReasonsSet.add(`AI model metadata: "${(hb as { ai_model?: string }).ai_model}"`);
+        aiReasonsSet.add(`AI model metadata: "${hb.ai_model}"`);
       }
+
+      if (!hbIsAi && isAiHeartbeat(hb)) hbIsAi = true;
 
       if (hbIsAi) {
         aiHeartbeatCount++;
@@ -483,26 +482,54 @@ async function buildMakerProjectBreakdown(
       }
     }
 
-    const aiPercentage = Math.round((aiHeartbeatCount / rawHeartbeats.length) * 100);
-    const handcraftedPercentage = Math.max(0, 100 - aiPercentage);
-    const isAiDetected = aiHeartbeatCount > 0;
+    // Hackatime's own line counts (AI-written against human-written) are the measure when they
+    // exist. Without them the share of AI-marked heartbeats is the best available estimate.
+    const attribution = attributeAi(rawHeartbeats);
+    const heartbeatShare = Math.round((aiHeartbeatCount / rawHeartbeats.length) * 100);
+    const basis: AiDetectionAudit["basis"] = attribution.aiLineShare !== null ? "lines" : "heartbeats";
+    const aiPercentage = attribution.aiLineShare ?? heartbeatShare;
+    const handcraftedPercentage = Math.max(0, Math.round((100 - aiPercentage) * 10) / 10);
+    // An AI-enabled editor is allowed. What counts is how much of the code the AI wrote, and a
+    // small slip is tolerated.
+    const isAiDetected = basis === "lines" ? aiPercentage > AI_TOLERANCE_PERCENT : aiHeartbeatCount > 0;
+    const unit = basis === "lines" ? "of changed lines" : "of heartbeats";
 
-    let aiVerdict = "CLEAN: 100% Handcrafted code detected. No AI categories, agent files or model metadata found.";
+    const evidence: string[] = [];
+    if (attribution.hasLineData) {
+      evidence.push(
+        `Hackatime counts ${attribution.aiLines.toLocaleString()} AI-written lines against ${attribution.humanLines.toLocaleString()} written by hand.`,
+      );
+    }
+    if (attribution.sessions > 0) {
+      evidence.push(
+        `${attribution.sessions} AI session(s), ${attribution.outputTokens.toLocaleString()} output tokens generated.`,
+      );
+    }
+    for (const model of attribution.models.slice(0, 3)) evidence.push(`AI model: ${model.name}`);
+
+    let aiVerdict = "CLEAN: no AI-written code found. No AI categories, agent files or model metadata.";
     if (aiPercentage >= 50) {
-      aiVerdict = `CRITICAL FRAUD: ${aiPercentage}% of project was generated via AI / Agent (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Strict violation of Old-Vibe handcrafted rule!`;
+      aiVerdict = `CRITICAL: ${aiPercentage}% ${unit} written by AI or an agent. A clear break of the hand-written rule.`;
     } else if (aiPercentage >= 10) {
-      aiVerdict = `HIGH RISK: ${aiPercentage}% AI coding detected (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Old-Vibe requires 100% human-coded craftsmanship.`;
-    } else if (aiPercentage > 0) {
-      aiVerdict = `SUSPICIOUS: Minor AI traces detected (${aiHeartbeatCount} heartbeats). Inspect commits carefully.`;
+      aiVerdict = `HIGH RISK: ${aiPercentage}% ${unit} written by AI. Old-Vibe code has to be written by the maker.`;
+    } else if (isAiDetected) {
+      aiVerdict = `SUSPICIOUS: ${aiPercentage}% ${unit} written by AI, above the ${AI_TOLERANCE_PERCENT}% allowance. Inspect the commits.`;
+    } else if (basis === "lines" && aiPercentage > 0) {
+      aiVerdict = `WITHIN ALLOWANCE: ${aiPercentage}% ${unit} written by AI, under the ${AI_TOLERANCE_PERCENT}% allowance.`;
     }
 
     const aiAudit: AiDetectionAudit = {
       isAiDetected,
+      basis,
       aiHeartbeatCount,
       aiPercentage,
       handcraftedPercentage,
+      aiLines: attribution.aiLines,
+      humanLines: attribution.humanLines,
+      aiSessions: attribution.sessions,
+      aiOutputTokens: attribution.outputTokens,
       aiEditorsDetected: Array.from(aiEditorsSet),
-      aiReasons: Array.from(aiReasonsSet),
+      aiReasons: [...evidence, ...Array.from(aiReasonsSet)],
       verdict: aiVerdict,
     };
 
@@ -776,21 +803,38 @@ async function buildMakerProjectBreakdown(
       }
     }
 
+    const idle = findIdleRuns(rawHeartbeats);
+    const trackedSeconds = totalsFrom(rawHeartbeats).seconds;
+    const trackedHours = trackedSeconds / 3600;
+    const idleShare = trackedSeconds > 0 ? idle.idleSeconds / trackedSeconds : 0;
+    const idleFlagged = idle.longestSeconds >= 30 * 60 || idleShare > 0.2;
+
+    const changedLines = attribution.aiLines + attribution.humanLines;
+    const reportsLines = rawHeartbeats.some(
+      (h) => typeof h.human_line_changes === "number" || typeof h.ai_line_changes === "number",
+    );
+    const linesPerHour =
+      reportsLines && trackedHours > 0 ? Math.round((changedLines / trackedHours) * 10) / 10 : null;
+    // Forty hours for fifty lines. Only judged when the editor reports lines at all.
+    const lowOutput = linesPerHour !== null && trackedHours >= 4 && linesPerHour < 4;
+
     // Authenticity Score & Reviewer Recommendation calculation
     let authenticityScore = 100;
     const decisionReasons: string[] = [];
 
     if (aiPercentage >= 50) {
       authenticityScore -= 90;
-      decisionReasons.push(`Critical AI Code Generation: ${aiPercentage}% AI heartbeats detected.`);
+      decisionReasons.push(`Critical: ${aiPercentage}% ${unit} written by AI.`);
     } else if (aiPercentage >= 15) {
       authenticityScore -= 60;
-      decisionReasons.push(`High AI Code Generation: ${aiPercentage}% AI heartbeats detected.`);
-    } else if (aiPercentage > 0) {
+      decisionReasons.push(`High: ${aiPercentage}% ${unit} written by AI.`);
+    } else if (isAiDetected) {
       authenticityScore -= 30;
-      decisionReasons.push(`Minor AI traces detected (${aiHeartbeatCount} AI heartbeats).`);
+      decisionReasons.push(`${aiPercentage}% ${unit} written by AI, above the ${AI_TOLERANCE_PERCENT}% allowance.`);
+    } else if (basis === "lines" && aiPercentage > 0) {
+      decisionReasons.push(`${aiPercentage}% of changed lines written by AI, within the ${AI_TOLERANCE_PERCENT}% allowance.`);
     } else {
-      decisionReasons.push("Verified 100% handcrafted code (no AI category or prompt artifacts).");
+      decisionReasons.push("Verified hand-written code (no AI-written lines, categories or agent files).");
     }
 
     if (isFixedIntervalSuspicious) {
@@ -815,6 +859,18 @@ async function buildMakerProjectBreakdown(
     if (isContinuousCodingSuspicious) {
       authenticityScore -= 20;
       decisionReasons.push(`Excessive continuous session (${maxContinuousHours}h without break).`);
+    }
+    if (idleFlagged) {
+      authenticityScore -= idleShare > 0.4 ? 35 : 20;
+      decisionReasons.push(
+        `Idle editor activity: ${Math.round(idle.idleSeconds / 60)} min of writes with a frozen cursor (longest ${Math.round(idle.longestSeconds / 60)} min).`,
+      );
+    }
+    if (lowOutput) {
+      authenticityScore -= 10;
+      decisionReasons.push(
+        `Very little code for the time: ${changedLines} changed lines in ${trackedHours.toFixed(1)}h.`,
+      );
     }
     if (pasteBurstCount >= 3) {
       authenticityScore -= pasteBurstCount >= 8 ? 25 : 12;
@@ -862,7 +918,9 @@ async function buildMakerProjectBreakdown(
       idleBloatAnomaly ||
       isZombieCodingSuspicious ||
       suspiciousLineJumpsCount >= 3 ||
-      pasteBurstCount >= 3
+      pasteBurstCount >= 3 ||
+      idleFlagged ||
+      lowOutput
     ) {
       recommendedDecision = "SCRUTINIZE";
     }
@@ -889,8 +947,10 @@ async function buildMakerProjectBreakdown(
       {
         label: "Hand-Written Code (Old-Vibe Core Rule)",
         detail: isAiDetected
-          ? `VIOLATION: ${aiPercentage}% AI coding detected (${aiHeartbeatCount}/${rawHeartbeats.length} heartbeats). Detected: ${Array.from(aiReasonsSet).slice(0, 3).join("; ")}.`
-          : "PASSED: 100% Handcrafted. No AI categories, agent files or model metadata detected.",
+          ? `VIOLATION: ${aiPercentage}% ${unit} written by AI. ${aiAudit.aiReasons.slice(0, 3).join(" ")}`
+          : basis === "lines" && aiPercentage > 0
+            ? `PASSED: ${aiPercentage}% ${unit} written by AI, within the ${AI_TOLERANCE_PERCENT}% allowance.`
+            : "PASSED: no AI-written lines, categories, agent files or model metadata.",
         pass: !isAiDetected,
       },
       {
@@ -921,6 +981,24 @@ async function buildMakerProjectBreakdown(
             ? "Rapid-burst heartbeats detected (possible automated script injection)."
             : `Natural cadence (~${Math.round((avgIntervalSec / 60) * 10) / 10}m average, ±${intervalStdDevSeconds}s natural variance).`,
         pass: !isFixedIntervalSuspicious && !burstWarning,
+      },
+      {
+        label: "Idle Editor Activity",
+        detail:
+          idle.runs.length > 0
+            ? `Warning: ${idle.runs.length} stretch(es) of writes with the cursor frozen, ${Math.round(idle.idleSeconds / 60)} min in all (${Math.round(idleShare * 100)}% of tracked time). This is what an auto key presser leaves behind.`
+            : "PASSED: the cursor moves while the editor records writes.",
+        pass: !idleFlagged,
+      },
+      {
+        label: "Output vs Time",
+        detail:
+          linesPerHour === null
+            ? "Not checked: this editor does not report changed line counts."
+            : lowOutput
+              ? `Warning: only ${changedLines} changed lines in ${trackedHours.toFixed(1)}h (${linesPerHour} an hour).`
+              : `${changedLines.toLocaleString()} changed lines in ${trackedHours.toFixed(1)}h (${linesPerHour} an hour).`,
+        pass: !lowOutput,
       },
       {
         label: "Copy-Paste Detection",
@@ -1001,6 +1079,10 @@ async function buildMakerProjectBreakdown(
       isZombieCodingSuspicious,
       suspiciousLineJumpsCount,
       pasteBurstCount,
+      idleMinutes: Math.round(idle.idleSeconds / 60),
+      longestIdleMinutes: Math.round(idle.longestSeconds / 60),
+      changedLines,
+      linesPerHour,
       maxLineJump,
       noiseEntitiesCount,
       noiseEntityRatio,
@@ -1022,9 +1104,14 @@ async function buildMakerProjectBreakdown(
       decisionReasons: ["No heartbeats recorded for selected project."],
       aiAudit: {
         isAiDetected: false,
+        basis: "heartbeats",
         aiHeartbeatCount: 0,
         aiPercentage: 0,
         handcraftedPercentage: 100,
+        aiLines: 0,
+        humanLines: 0,
+        aiSessions: 0,
+        aiOutputTokens: 0,
         aiEditorsDetected: [],
         aiReasons: [],
         verdict: "No heartbeats recorded.",
@@ -1043,6 +1130,10 @@ async function buildMakerProjectBreakdown(
       isZombieCodingSuspicious: false,
       suspiciousLineJumpsCount: 0,
       pasteBurstCount: 0,
+      idleMinutes: 0,
+      longestIdleMinutes: 0,
+      changedLines: 0,
+      linesPerHour: null,
       maxLineJump: 0,
       noiseEntitiesCount: 0,
       noiseEntityRatio: 0,
