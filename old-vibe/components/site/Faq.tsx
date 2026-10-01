@@ -31,6 +31,21 @@ const FAQ: Entry[] = [
       "You can open it, it is just an editor. You cannot let it write your project: chat, agent mode and accepted suggestions all count as AI-written code. If you are not sure, turn the AI features off while you work on your submission.",
   },
   {
+    question: "What happens if I break the rules?",
+    answer:
+      "A reviewer records the violation with a reason you can read. The first is a 7 day ban, the second 30 days, the third is permanent. Fraud such as fake time, bots or stolen work is a permanent ban straight away. While banned you cannot submit or order, but you can still sign in.",
+  },
+  {
+    question: "Can I appeal a ban?",
+    answer:
+      "Yes. Message the organizers on Hack Club Slack and explain what happened. A reviewer will look again, and if the ban was a mistake it is lifted and does not count against you.",
+  },
+  {
+    question: "Can I submit the same repository twice?",
+    answer:
+      "No. Each repository can be submitted once, and the same Hackatime hours cannot be claimed for two projects. If you improved an old project, resend the original submission instead.",
+  },
+  {
     question: "Is copy-paste allowed?",
     answer:
       "Not for code you did not write. Reading docs and typing out what you learned is fine. Pasting a block from somewhere else is not, and large blocks that appear in one go are flagged during review.",

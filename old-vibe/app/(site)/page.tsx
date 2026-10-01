@@ -112,6 +112,42 @@ export default function HomePage() {
             that appear all at once, or a project with one commit, will be looked at closely.
           </p>
           
+          <h2 className={styles.dealTitle}>What Reviewers Look For</h2>
+          <ul className={styles.checkList}>
+            <li>A public repository with a README that says what the project is and how to run it.</li>
+            <li>A demo people can open or download. A video of it does not count.</li>
+            <li>Time that matches the work. Forty hours cannot be a few dozen lines.</li>
+            <li>Work that is new. A repository can only be submitted once, and the same hours cannot be claimed twice.</li>
+            <li>Honest Hackatime data. No bots, fake keystrokes or editors left running.</li>
+          </ul>
+
+          <h2 className={styles.dealTitle}>When The Rules Are Broken</h2>
+          <p className={styles.dealBody}>
+            Reviews are done by people, and a violation is a decision a person made and wrote
+            down. You are told the reason. Repeated violations escalate.
+          </p>
+          <ol className={styles.ladder}>
+            <li className={styles.ladderStep}>
+              <span className={styles.ladderNum}>First</span>
+              <span className={styles.ladderWhat}>7 day ban</span>
+            </li>
+            <li className={styles.ladderStep}>
+              <span className={styles.ladderNum}>Second</span>
+              <span className={styles.ladderWhat}>30 day ban</span>
+            </li>
+            <li className={`${styles.ladderStep} ${styles.ladderFinal}`}>
+              <span className={styles.ladderNum}>Third</span>
+              <span className={styles.ladderWhat}>Permanent</span>
+            </li>
+          </ol>
+          <p className={styles.dealBody}>
+            Fraud skips the ladder: fake time, bots, stolen work or lying about what you built is
+            a permanent ban straight away. While banned you cannot submit projects or place
+            orders, but you can still sign in and read why. If you think it was a mistake, message
+            the organizers on Hack Club Slack and a reviewer will look again. Hack Club also bans
+            Hackatime accounts that fake their time.
+          </p>
+
           <h2 className={styles.dealTitle}>2+ Hours Minimum</h2>
           <p className={styles.dealBody}>
             You must have at least 2 hours of tracked time in Hackatime for your project to be eligible for submission. We value genuine effort.

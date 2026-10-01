@@ -18,7 +18,13 @@ We are not trying to catch people out. We would just like Old Vibe to be a place
 people log are hours they actually spent learning. Reviewers are humans, they read your commits
 and your README, and they might ask you about a part of the code.
 
-You need at least two tracked hours on a project to submit it.
+You need at least two tracked hours on a project to submit it. A repository can only be submitted
+once, and the same hours cannot be claimed for two projects.
+
+Breaking the rules has consequences. A reviewer records a violation with a reason the maker can read:
+the first is a 7 day ban, the second 30 days, the third is permanent. Fraud (fake time, bots, stolen
+work) is permanent straight away. Banned makers cannot submit or order, and can appeal to the
+organizers on Slack. Reviewers manage this from the review page.
 
 ## How it works
 

@@ -326,3 +326,81 @@
     grid-template-columns: 1fr;
   }
 }
+
+.checkList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+.checkList li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.checkList li::before {
+  content: "";
+  position: absolute;
+  top: 0.6em;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  background: var(--orchid);
+  transform: rotate(45deg);
+}
+
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+  counter-reset: step;
+}
+
+.ladderStep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--s3) var(--s4);
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--wobble-sm);
+  transition: transform 0.2s ease;
+}
+
+.ladderStep:hover {
+  transform: translateY(-3px);
+}
+
+.ladderFinal {
+  background: var(--bad-bg);
+  border-color: var(--bad-border);
+}
+
+.ladderNum {
+  font-family: var(--data);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--lilac);
+}
+
+.ladderWhat {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.ladderFinal .ladderWhat {
+  color: var(--bad);
+}
+
+@media (max-width: 700px) {
+  .ladder {
+    grid-template-columns: 1fr;
+  }
+}
