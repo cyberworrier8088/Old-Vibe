@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
-export const alt = "3am, a Hack Club YSWS";
+export const alt = "Old Vibe, a Hack Club YSWS";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -28,7 +28,7 @@ export default async function OpengraphImage() {
       }}
     >
       <div style={{ display: "flex", fontFamily: "Augie", fontSize: 210, color: "#f7e9a8" }}>
-        3am
+        Old Vibe
       </div>
       <div
         style={{
@@ -39,7 +39,7 @@ export default async function OpengraphImage() {
           marginTop: 12,
         }}
       >
-        build something dark before the sun comes up
+        build something by hand, ship it, earn paper
       </div>
       <div
         style={{

@@ -60,7 +60,7 @@ export function hoursJustification(row: PendingRow): string {
         : [],
     ),
     section("ADDITIONAL JUSTIFICATION", [
-      `Reviewed in 3AM and approved for ${grantHours(row)}h${reviewed}.`,
+      `Reviewed in Old Vibe and approved for ${grantHours(row)}h${reviewed}.`,
       row.repoUrl ? `Commit history: ${commitsUrl(row.repoUrl)}` : null,
     ]),
   ]

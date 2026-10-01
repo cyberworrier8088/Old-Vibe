@@ -7,7 +7,7 @@ import { connectionUrl } from "./url";
 type Database = ReturnType<typeof create>;
 
 declare global {
-  var __3amDb: Database | undefined;
+  var __oldVibeDb: Database | undefined;
 }
 
 function create() {
@@ -18,5 +18,5 @@ function create() {
 }
 
 export function getDb(): Database {
-  return (globalThis.__3amDb ??= create());
+  return (globalThis.__oldVibeDb ??= create());
 }

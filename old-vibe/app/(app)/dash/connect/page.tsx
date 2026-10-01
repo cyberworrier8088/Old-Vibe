@@ -22,7 +22,7 @@ const STATUS: Record<string, { tone: "ok" | "warn" | "bad"; text: string }> = {
   denied: { tone: "warn", text: "You said no on Hackatime's screen, so nothing was connected." },
   failed: {
     tone: "bad",
-    text: "That did not work. Try again, and tell us in #3am if it keeps failing.",
+    text: "That did not work. Try again, and tell us in Slack if it keeps failing.",
   },
 };
 
