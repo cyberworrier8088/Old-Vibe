@@ -1,13 +1,13 @@
-import { and, eq, isNull, isNotNull, ne } from "drizzle-orm";
+import { and, arrayOverlaps, eq, ilike, inArray, isNull, isNotNull, ne, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { validateSubmission } from "@/lib/superviewer/payload";
-import { repoHasReadme, repoIsReachable } from "@/lib/superviewer/repo";
+import { githubSlug, repoHasReadme, repoIsReachable } from "@/lib/superviewer/repo";
 import { canShip, checkEligibility } from "@/lib/auth/eligibility";
 import { getCurrentUser } from "@/lib/auth/users";
 import { getDb } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
-import { reviewIsExternal } from "@/lib/review";
+import { projects, users } from "@/lib/db/schema";
+import { getReviewBackend, reviewIsExternal } from "@/lib/review";
 import type { ReviewSubmission } from "@/lib/review";
 import { getPickerProjects } from "@/lib/hackatime/projects";
 
@@ -100,27 +100,66 @@ export async function POST(request: Request) {
 
   const db = getDb();
 
-  // Prevent double dipping: ensure no selected Hackatime project was already claimed in another submission
-  if (candidate.hackatimeProjects.length > 0) {
-    const claimed = await db
-      .select({
-        id: projects.id,
-        title: projects.title,
-        hackatimeProjects: projects.hackatimeProjects,
-      })
+  // One repository, one submission: the same repo cannot be shipped by two makers (or re-shipped
+  // under a new title). Compared on the owner/name slug so .git, case and trailing slashes do not
+  // matter. The message never says who has it.
+  const slug = githubSlug(candidate.repoUrl)?.toLowerCase();
+  if (slug) {
+    const taken = await db
+      .select({ repoUrl: projects.repoUrl, id: projects.id })
       .from(projects)
-      .where(and(body.id ? ne(projects.id, body.id) : undefined, isNotNull(projects.submittedAt)));
-
-    for (const proj of claimed) {
-      const duplicate = candidate.hackatimeProjects.find((key) =>
-        proj.hackatimeProjects.includes(key)
+      .where(and(isNotNull(projects.submittedAt), ilike(projects.repoUrl, `%${slug}%`)));
+    const clash = taken.find(
+      (row) =>
+        row.repoUrl &&
+        githubSlug(row.repoUrl)?.toLowerCase() === slug &&
+        row.id !== body.id,
+    );
+    if (clash) {
+      return invalid(
+        "repo_url",
+        "That repository has already been submitted. Each repository can only be shipped once.",
       );
-      if (duplicate) {
-        return invalid(
-          "hackatime_projects",
-          `The Hackatime project "${duplicate}" was already claimed for "${proj.title}". Double dipping is not allowed!`
-        );
-      }
+    }
+  }
+
+  // Prevent double dipping: a Hackatime project can only be claimed by one submission. Project
+  // names are free-form labels that belong to a single Hackatime account, so only claims made by
+  // this maker (or by another account linked to the same Hackatime account) can clash. Looking
+  // at everyone's claims would block makers who merely picked a common name like "website", and
+  // would reveal other makers' project titles in the error.
+  if (candidate.hackatimeProjects.length > 0) {
+    const sameOwner = user.hackatimeId
+      ? or(
+          eq(projects.userSub, user.sub),
+          inArray(
+            projects.userSub,
+            db.select({ sub: users.sub }).from(users).where(eq(users.hackatimeId, user.hackatimeId)),
+          ),
+        )
+      : eq(projects.userSub, user.sub);
+
+    const [clash] = await db
+      .select({ title: projects.title, hackatimeProjects: projects.hackatimeProjects })
+      .from(projects)
+      .where(
+        and(
+          isNotNull(projects.submittedAt),
+          body.id ? ne(projects.id, body.id) : undefined,
+          sameOwner,
+          arrayOverlaps(projects.hackatimeProjects, candidate.hackatimeProjects),
+        ),
+      )
+      .limit(1);
+
+    if (clash) {
+      const duplicate = candidate.hackatimeProjects.find((key) =>
+        clash.hackatimeProjects.includes(key),
+      );
+      return invalid(
+        "hackatime_projects",
+        `The Hackatime project "${duplicate}" was already claimed for "${clash.title}". Double dipping is not allowed!`,
+      );
     }
   }
 
@@ -161,6 +200,19 @@ export async function POST(request: Request) {
       );
     }
     throw error;
+  }
+
+  // Hand the ship to the review backend (a no-op log line when reviewing locally). It was
+  // dropped from this route by accident, which left first-time submissions out of an external
+  // Superviewer; only resends reached it.
+  const outcome = await getReviewBackend().submit({ ...candidate, externalId: row.id });
+
+  if (outcome.status === "rejected") return invalid(outcome.field ?? "", outcome.message);
+  if (outcome.status === "already_queued") {
+    return NextResponse.json({ error: "already_queued" }, { status: 409 });
+  }
+  if (outcome.status === "unavailable") {
+    return NextResponse.json({ error: "unavailable", message: outcome.message }, { status: 503 });
   }
 
   await db

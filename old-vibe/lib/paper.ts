@@ -1,15 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import { paperRateForStreak } from "@/lib/rewards";
+import { paperForMinutes } from "@/lib/rewards";
 import { getDb } from "@/lib/db";
 import { beansLedger } from "@/lib/db/schema";
 import type { Project } from "@/lib/db/schema";
 
-export function paperForMinutes(minutes: number | null | undefined, streak: number = 0): number {
-  if (!minutes || minutes <= 0) return 0;
-  const rate = paperRateForStreak(streak);
-  return Math.round((minutes / 60) * rate);
-}
+export { paperForMinutes };
 
 export function hoursLabel(minutes: number | null | undefined): string {
   if (!minutes || minutes <= 0) return "0";

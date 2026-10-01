@@ -7,7 +7,7 @@ import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { PaperIcon } from "@/components/ui/PaperIcon";
-import { paperRateForStreak } from "@/lib/rewards";
+import { paperForMinutes, paperRateForStreak, streakBonusForStreak } from "@/lib/rewards";
 
 import styles from "./page.module.css";
 
@@ -82,7 +82,9 @@ export function DecisionForm({
   // Real-time Paper calculation
   const parsedHours = Number(hours) || 0;
   const paperRate = paperRateForStreak(makerStreak);
-  const calculatedPaper = parsedHours > 0 ? Math.round(parsedHours * paperRate) : 0;
+  const streakBonus = streakBonusForStreak(makerStreak);
+  // Same maths as the ledger entry written on approval: whole minutes, then the streak rate.
+  const calculatedPaper = paperForMinutes(Math.round(parsedHours * 60), makerStreak);
 
   async function record() {
     setWorking(true);
@@ -262,7 +264,7 @@ export function DecisionForm({
               </span>
               <span className={styles.calcRate}>
                 {paperRate.toFixed(1)} paper/hr
-                {makerStreak > 0 ? ` (+${(makerStreak * 0.1).toFixed(1)} streak)` : ""}
+                {streakBonus > 0 ? ` (+${streakBonus.toFixed(1)} streak)` : ""}
               </span>
             </div>
             <div className={styles.calcTotalRow}>

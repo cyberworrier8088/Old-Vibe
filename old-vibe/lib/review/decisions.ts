@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
 import type { Project } from "@/lib/db/schema";
 
-export type DecisionKind = "approved" | "changes" | "rejected";
+export type DecisionKind = NonNullable<Project["decision"]>;
 
 export type DecisionInput = {
   projectId: string;

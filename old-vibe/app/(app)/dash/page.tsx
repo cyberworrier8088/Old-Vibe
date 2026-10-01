@@ -16,6 +16,7 @@ import { projects } from "@/lib/db/schema";
 import { isOpen, projectStatus } from "@/lib/projects/status";
 import { balanceFor, hoursLabel } from "@/lib/beans";
 import { PaperIcon } from "@/components/ui/PaperIcon";
+import { paperRateForStreak } from "@/lib/rewards";
 
 import styles from "./page.module.css";
 
@@ -37,8 +38,6 @@ export default async function DashboardPage() {
     balanceFor(user.sub)
   ]);
 
-  const owl = null;
-
   if (mine.length === 0) {
     return (
       <AppShell title="tonight">
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
           </Banner>
         ) : null}
         <EmptyState
-          art={owl}
           title="nothing here yet"
           action={
             user.hackatimeToken ? (
@@ -59,7 +57,7 @@ export default async function DashboardPage() {
             )
           }
         >
-          Build something dark, track it in Hackatime, then send it in. The owl will wait.
+          Build something by hand, track it in Hackatime, then send it in.
         </EmptyState>
       </AppShell>
     );
@@ -88,7 +86,7 @@ export default async function DashboardPage() {
             </span>
           }
           value={balances.paper}
-          sub={`${(4.0 + (user.streak * 0.1)).toFixed(1)} per approved hour`}
+          sub={`${paperRateForStreak(user.streak).toFixed(1)} per approved hour`}
         />
         {balances.gold > 0 && (
           <StatCard

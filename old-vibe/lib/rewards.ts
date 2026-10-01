@@ -14,6 +14,21 @@ export function paperRateForStreak(streakDays: number): number {
   return Math.min(PAPER_MAX_RATE, PAPER_PER_HOUR + bonus);
 }
 
+/** The part of the hourly rate that comes from the streak alone. */
+export function streakBonusForStreak(streakDays: number): number {
+  return paperRateForStreak(streakDays) - PAPER_PER_HOUR;
+}
+
+/**
+ * Paper earned for approved minutes. Kept here, free of any database import, so the reviewer's
+ * live preview and the ledger entry written on approval can never disagree.
+ */
+export function paperForMinutes(minutes: number | null | undefined, streak: number = 0): number {
+  if (!minutes || minutes <= 0) return 0;
+  const rate = paperRateForStreak(streak);
+  return Math.round((minutes / 60) * rate);
+}
+
 export const REWARDS: Reward[] = [
   { name: "book grant", cost: 5, label: "Book" },
   { name: "hardware grant", cost: 5, label: "Hardware" },
