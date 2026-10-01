@@ -2,7 +2,8 @@
 
 import { use } from "react";
 
-import type { Evidence, Flag, TimelineEvent } from "@/lib/review/evidence";
+import type { Evidence, Flag, PriorShip, TimelineEvent } from "@/lib/review/evidence";
+import type { CheckTone, ForensicCheck } from "@/lib/review/forensics";
 
 import styles from "./EvidencePanel.module.css";
 
@@ -10,6 +11,12 @@ export type ReviewEvidence = {
   evidence: Evidence;
   events: TimelineEvent[];
   flags: Flag[];
+  /** Commit, file and history checks from lib/review/forensics.ts. */
+  forensics: ForensicCheck[];
+  /** Tracked hours that commits back up, for a one-click deflation. Null when unknown. */
+  commitBackedHours: number | null;
+  /** YYYY-MM-DD; only work after it counts. */
+  eventStart: string;
   /** Evidence-based hour justification for the unified YSWS database, minus the decision line. */
   justification: string;
 };
@@ -30,6 +37,13 @@ const MATCH_LABEL = {
   "same-maker": "Same maker",
 } as const;
 
+const CHECK_CLASS: Record<CheckTone, string | undefined> = {
+  ok: styles.checkOk,
+  warn: styles.checkWarn,
+  bad: styles.checkBad,
+  unknown: styles.checkUnknown,
+};
+
 function short(url: string) {
   return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 }
@@ -42,16 +56,70 @@ export function EvidenceBadge({ review }: { review: Promise<ReviewEvidence> }) {
   return <span className={bad ? styles.badgeBad : styles.badgeWarn}>{flags.length}</span>;
 }
 
+function ShipTable({ ships, start }: { ships: PriorShip[]; start: number }) {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Program</th>
+            <th>Match</th>
+            <th>Project</th>
+            <th>Hours</th>
+            <th>Approved</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ships.map((ship) => {
+            const before = ship.approvedAt !== null && ship.approvedAt * 1000 < start;
+            const tone =
+              ship.match === "same-repo"
+                ? before
+                  ? styles.rowWarn
+                  : styles.rowBad
+                : ship.match === "same-name"
+                  ? styles.rowWarn
+                  : undefined;
+            return (
+              <tr key={`${ship.ysws}-${ship.codeUrl}-${ship.approvedAt}`} className={tone}>
+                <td className={styles.program}>{ship.ysws}</td>
+                <td className={styles.match}>{MATCH_LABEL[ship.match]}</td>
+                <td className={styles.link}>
+                  <a href={ship.codeUrl} target="_blank" rel="noreferrer">
+                    {short(ship.codeUrl)}
+                  </a>
+                </td>
+                <td className={`${styles.num} ${styles.hours}`}>{ship.hours != null ? `${ship.hours}h` : "?"}</td>
+                <td className={`${styles.num} ${styles.approved}`}>
+                  <span className={styles.cellLabel}>approved </span>
+                  {ship.approvedAt ? DAY.format(new Date(ship.approvedAt * 1000)) : "?"}
+                  <span className={before ? styles.before : styles.during}>
+                    {ship.approvedAt === null ? "" : before ? "before Old-Vibe" : "during Old-Vibe"}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function EvidencePanel({ review }: { review: Promise<ReviewEvidence> }) {
-  const { evidence, events, flags } = use(review);
+  const { evidence, events, flags, forensics, eventStart } = use(review);
   const { repo, priorShips, demo } = evidence;
+  const start = Date.parse(`${eventStart}T00:00:00Z`);
+  const thisProject = (priorShips ?? []).filter((ship) => ship.match !== "same-maker");
+  const makersOther = (priorShips ?? []).filter((ship) => ship.match === "same-maker");
+  const makersOtherBefore = makersOther.filter((ship) => ship.approvedAt !== null && ship.approvedAt * 1000 < start);
 
   return (
     <div className={styles.panel}>
       <section className={styles.section}>
         <h4 className={styles.heading}>Needs attention</h4>
         {flags.length === 0 ? (
-          <p className={styles.clear}>Nothing from GitHub, other YSWS programs or the demo link needs a look.</p>
+          <p className={styles.clear}>Nothing from GitHub, Hackatime, other YSWS programs or the demo link needs a look.</p>
         ) : (
           <ul className={styles.flags}>
             {flags.map((flag) => (
@@ -65,48 +133,64 @@ export function EvidencePanel({ review }: { review: Promise<ReviewEvidence> }) {
 
       <section className={styles.section}>
         <div className={styles.head}>
+          <h4 className={styles.heading}>Fraud checks</h4>
+          <span className={styles.hint}>GitHub against Hackatime, since {DAY.format(start)}</span>
+        </div>
+        <ul className={styles.checks}>
+          {forensics.map((check) => (
+            <li key={check.key} className={CHECK_CLASS[check.tone]}>
+              <div className={styles.checkHead}>
+                <span className={styles.checkLabel}>{check.label}</span>
+                <span className={styles.checkValue}>{check.value}</span>
+              </div>
+              <p className={styles.checkDetail}>{check.detail}</p>
+              {check.items && check.items.length > 0 ? (
+                <ul className={styles.checkItems}>
+                  {check.items.map((item) => (
+                    <li key={item.text}>
+                      {item.href ? (
+                        <a href={item.href} target="_blank" rel="noreferrer">
+                          {item.text}
+                        </a>
+                      ) : (
+                        item.text
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.head}>
           <h4 className={styles.heading}>Other YSWS programs</h4>
           <span className={styles.hint}>Hack Club unified YSWS database</span>
         </div>
         {priorShips === null ? (
-          <p className={styles.empty}>The unified YSWS database could not be reached. Try reloading.</p>
-        ) : priorShips.length === 0 ? (
-          <p className={styles.empty}>No approved project in any other YSWS uses this repository or comes from this maker.</p>
+          <p className={styles.empty}>The unified YSWS database did not answer in time. It keeps downloading in the background, so reload in a minute.</p>
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Program</th>
-                  <th>Match</th>
-                  <th>Project</th>
-                  <th>Hours</th>
-                  <th>Approved</th>
-                </tr>
-              </thead>
-              <tbody>
-                {priorShips.map((ship) => (
-                  <tr
-                    key={`${ship.ysws}-${ship.codeUrl}-${ship.approvedAt}`}
-                    className={ship.match === "same-repo" ? styles.rowBad : ship.match === "same-name" ? styles.rowWarn : undefined}
-                  >
-                    <td className={styles.program}>{ship.ysws}</td>
-                    <td className={styles.match}>{MATCH_LABEL[ship.match]}</td>
-                    <td className={styles.link}>
-                      <a href={ship.codeUrl} target="_blank" rel="noreferrer">
-                        {short(ship.codeUrl)}
-                      </a>
-                    </td>
-                    <td className={`${styles.num} ${styles.hours}`}>{ship.hours != null ? `${ship.hours}h` : "?"}</td>
-                    <td className={`${styles.num} ${styles.approved}`}>
-                      <span className={styles.cellLabel}>approved </span>
-                      {ship.approvedAt ? DAY.format(new Date(ship.approvedAt * 1000)) : "?"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {thisProject.length === 0 ? (
+              <p className={styles.clear}>No other program approved this repository, or one with its name.</p>
+            ) : (
+              <ShipTable ships={thisProject} start={start} />
+            )}
+            {makersOther.length > 0 ? (
+              <details className={styles.others}>
+                <summary>
+                  The maker&apos;s other YSWS projects: {makersOther.length}
+                  {makersOtherBefore.length > 0 ? `, ${makersOtherBefore.length} before Old-Vibe started` : ""}
+                </summary>
+                <p className={styles.empty}>
+                  Different repositories. Only one approved while Old-Vibe ran could share hours with this project.
+                </p>
+                <ShipTable ships={makersOther} start={start} />
+              </details>
+            ) : null}
+          </>
         )}
       </section>
 

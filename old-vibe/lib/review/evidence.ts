@@ -4,6 +4,7 @@ import type { RepoFacts } from "@/lib/superviewer/repo";
 import { checkDemo } from "./demo";
 import type { DemoCheck } from "./demo";
 import { findPriorShips } from "./unified";
+import { shippedDuring } from "./window";
 import type { PriorShip } from "./unified";
 
 export type { DemoCheck, PriorShip, RepoFacts };
@@ -51,6 +52,8 @@ export type TimelineEvent = {
 export type Flag = { tone: Exclude<Tone, "neutral">; text: string };
 
 const DAY_MS = 86_400_000;
+const DAY = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
 const toMs = (iso: string | null | undefined) => {
   const value = iso ? Date.parse(iso) : NaN;
   return Number.isFinite(value) ? value : null;
@@ -126,23 +129,39 @@ export function buildTimeline(input: {
   const submitted = toMs(input.submittedAt);
   if (submitted !== null) events.push({ at: submitted, label: "Submitted to Old-Vibe", tone: "neutral" });
 
+  // The timeline is about this project. The maker's other projects only belong on it when they were
+  // approved while Old-Vibe ran, since only then could their hours overlap with these.
   for (const ship of priorShips ?? []) {
     if (!ship.approvedAt) continue;
-    const sameRepo = ship.match === "same-repo";
+    const during = shippedDuring(ship, input.eventStart);
+    if (ship.match === "same-maker" && !during) continue;
     events.push({
       at: ship.approvedAt * 1000,
-      label: `Approved by ${ship.ysws}`,
-      detail: `${ship.hours ?? "?"}h · ${ship.codeUrl}${sameRepo ? " · this repository" : ""}`,
-      tone: sameRepo ? "bad" : ship.match === "same-name" ? "warn" : "neutral",
+      label:
+        ship.match === "same-maker"
+          ? `Maker's other project approved by ${ship.ysws}`
+          : `Approved by ${ship.ysws}`,
+      detail: `${ship.hours ?? "?"}h · ${ship.codeUrl}${ship.match === "same-repo" ? " · this repository" : ""}`,
+      tone:
+        ship.match === "same-repo" ? (during ? "bad" : "warn") : ship.match === "same-name" ? "warn" : "neutral",
       href: ship.codeUrl,
     });
   }
 
   for (const ship of (priorShips ?? []).filter((s) => s.match === "same-repo")) {
-    flags.push({
-      tone: "bad",
-      text: `This repository was already approved by ${ship.ysws}${ship.hours !== null ? ` for ${ship.hours}h` : ""}. The same work cannot be paid twice; only new hours count.`,
-    });
+    const hours = ship.hours !== null ? ` for ${ship.hours}h` : "";
+    const when = ship.approvedAt ? ` on ${DAY.format(ship.approvedAt * 1000)}` : "";
+    flags.push(
+      shippedDuring(ship, input.eventStart)
+        ? {
+            tone: "bad",
+            text: `This repository was approved by ${ship.ysws}${hours}${when}, while Old-Vibe was running. Those may be the same hours claimed here; compare the dates before approving.`,
+          }
+        : {
+            tone: "warn",
+            text: `This repository was shipped to ${ship.ysws}${hours}${when}, before Old-Vibe started. Only hours since the start count, and Hackatime already leaves the earlier ones out; check the new work is real.`,
+          },
+    );
   }
   const copies = (priorShips ?? []).filter((s) => s.match === "same-name");
   if (copies.length > 0) {

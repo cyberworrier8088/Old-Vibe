@@ -1,5 +1,7 @@
 import type { Flag } from "./evidence";
 import type { DemoCheck, PriorShip, RepoFacts } from "./evidence";
+import { shippedDuring } from "./window";
+import type { ForensicCheck } from "./forensics";
 
 /**
  * Writes the hour justification the unified YSWS database asks for. Hack Club's reviewers reject
@@ -23,6 +25,9 @@ export type JustificationInput = {
   repo: RepoFacts | null;
   priorShips: PriorShip[] | null;
   demo: DemoCheck | null;
+  /** Commit, file and history checks; see lib/review/forensics.ts. */
+  forensics: ForensicCheck[];
+  eventStart: string;
   flags: Flag[];
 };
 
@@ -77,10 +82,18 @@ export function buildJustification(input: JustificationInput): string {
       ? "The unified YSWS database could not be checked at review time."
       : shipsElsewhere.length === 0
         ? "This repository has not been approved by any other YSWS program."
-        : `This repository was already approved by ${shipsElsewhere
-            .map((ship) => `${ship.ysws} (${ship.hours ?? "?"}h)`)
-            .join(", ")}; only work after that approval is counted.`,
+        : `This repository was also approved by ${shipsElsewhere
+            .map(
+              (ship) =>
+                `${ship.ysws} (${ship.hours ?? "?"}h${ship.approvedAt ? `, ${day(ship.approvedAt * 1000)}` : ""}, ${shippedDuring(ship, input.eventStart) ? "while Old-Vibe ran" : "before Old-Vibe started"})`,
+            )
+            .join(", ")}; only hours tracked since the start are counted here.`,
   ]);
+
+  const forensics = section(
+    "FORENSICS",
+    input.forensics.filter((check) => check.tone !== "unknown").map((check) => `${check.label}: ${check.value}.`),
+  );
 
   const demo = input.demo
     ? section("DEMO", [input.demo.ok ? `${input.demo.url} loads.` : `${input.demo.url}: ${input.demo.problem ?? "not working"}`])
@@ -91,7 +104,7 @@ export function buildJustification(input: JustificationInput): string {
     input.flags.map((flag) => flag.text),
   );
 
-  return [hackatime, code, authenticity, others, demo, concerns].filter(Boolean).join("\n\n");
+  return [hackatime, code, forensics, authenticity, others, demo, concerns].filter(Boolean).join("\n\n");
 }
 
 /** The decision line goes on top at the moment of approval, when the hours are final. */

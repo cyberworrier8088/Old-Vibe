@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db";
 import { projects, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
 import { waiting } from "@/lib/review/queue";
+import { warmUnifiedIndex } from "@/lib/review/unified";
 import type { ProjectStatus } from "@/lib/status";
 
 import { QueueTable } from "./QueueTable";
@@ -33,6 +34,8 @@ export default async function ShipsPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   if (!(await requireOrganizer())) notFound();
+  // Reviews check every submission against the unified YSWS database; start loading it now.
+  warmUnifiedIndex();
 
   const { filter } = await searchParams;
   const active = FILTERS.find((option) => option.key === filter) ?? FILTERS[0];

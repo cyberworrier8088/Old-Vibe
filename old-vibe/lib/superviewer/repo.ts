@@ -180,16 +180,59 @@ export type RepoFacts = {
   authors: string[];
 };
 
+/** One commit with everything the forensic checks read. Kept on the server, never sent to a page. */
+export type CommitDetail = {
+  sha: string;
+  url: string;
+  /** The whole message, trailers included. */
+  message: string;
+  /** "@login" when GitHub knows the account, otherwise the git author name. */
+  author: string;
+  authorLogin: string | null;
+  authorDate: string | null;
+  committerDate: string | null;
+  /** Made on github.com (an edit in the browser, a merged pull request), not in an editor. */
+  viaWeb: boolean;
+};
+
+export type TreeFile = { path: string; size: number };
+
+/** What the forensic checks need from GitHub: the latest hundred commits and every file. */
+export type RepoForensicData = {
+  commits: CommitDetail[];
+  /** Total commits on the default branch, when known. */
+  commitCount: number | null;
+  /** Null when the file tree could not be read. */
+  tree: TreeFile[] | null;
+  treeTruncated: boolean;
+};
+
 type GitHubCommit = {
   sha: string;
   html_url: string;
   author: { login?: string } | null;
+  committer?: { login?: string } | null;
   commit: {
     message: string;
     author: { name?: string; date?: string } | null;
     committer: { date?: string } | null;
   };
 };
+
+function toDetail(commit: GitHubCommit): CommitDetail {
+  return {
+    sha: commit.sha,
+    url: commit.html_url,
+    message: commit.commit.message,
+    author: commit.author?.login
+      ? `@${commit.author.login}`
+      : (commit.commit.author?.name ?? "Unknown author"),
+    authorLogin: commit.author?.login ?? null,
+    authorDate: commit.commit.author?.date ?? null,
+    committerDate: commit.commit.committer?.date ?? null,
+    viaWeb: commit.committer?.login === "web-flow",
+  };
+}
 
 function toEvidence(commit: GitHubCommit): RepoCommitEvidence {
   return {
@@ -212,14 +255,15 @@ async function github(path: string): Promise<Response> {
 }
 
 const FACTS_TTL_MS = 10 * 60_000;
-const facts = new Map<string, { at: number; value: Promise<RepoFacts | null> }>();
+type Loaded = { facts: RepoFacts; forensic: RepoForensicData } | null;
+const facts = new Map<string, { at: number; value: Promise<Loaded> }>();
 
 /**
- * Everything a reviewer needs from GitHub in four requests: the repo itself (fork? when made?), the
- * commit count (from the Link header of a one-per-page listing), the very first commit, and the
- * latest thirty. Cached for ten minutes per repo. Never rejects.
+ * Everything a reviewer needs from GitHub in five requests: the repo itself (fork? when made?), the
+ * commit count (from the Link header of a one-per-page listing), the latest hundred commits, the
+ * very first commit, and the whole file tree. Cached for ten minutes per repo. Never rejects.
  */
-export function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
+function loadRepo(url: string): Promise<Loaded> {
   const slug = githubSlug(url);
   if (!slug) return Promise.resolve(null);
 
@@ -227,12 +271,12 @@ export function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
   const hit = facts.get(key);
   if (hit && Date.now() - hit.at < FACTS_TTL_MS) return hit.value;
 
-  const value = (async (): Promise<RepoFacts | null> => {
+  const value = (async (): Promise<Loaded> => {
     try {
       const [repoRes, countRes, recentRes] = await Promise.all([
         github(`/repos/${slug}`),
         github(`/repos/${slug}/commits?per_page=1`),
-        github(`/repos/${slug}/commits?per_page=30`),
+        github(`/repos/${slug}/commits?per_page=100`),
       ]);
       if (!repoRes.ok) return null;
 
@@ -243,10 +287,19 @@ export function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
         fork?: boolean;
         parent?: { full_name?: string };
         stargazers_count?: number;
+        default_branch?: string;
       };
 
+      // Started now so it overlaps the first-commit lookup below.
+      const treeRequest = repo.default_branch
+        ? github(`/repos/${slug}/git/trees/${encodeURIComponent(repo.default_branch)}?recursive=1`).catch(
+            () => null,
+          )
+        : null;
+
       // An empty repository answers 409 to the commit listing.
-      const recent = recentRes.ok ? ((await recentRes.json()) as GitHubCommit[]).map(toEvidence) : [];
+      const listed = recentRes.ok ? ((await recentRes.json()) as GitHubCommit[]) : [];
+      const recent = listed.map(toEvidence);
 
       let commitCount: number | null = countRes.ok ? recent.length : null;
       let firstCommit: RepoCommitEvidence | null = null;
@@ -259,18 +312,35 @@ export function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
         firstCommit = recent[recent.length - 1];
       }
 
+      let tree: TreeFile[] | null = null;
+      let treeTruncated = false;
+      const treeRes = treeRequest ? await treeRequest : null;
+      if (treeRes?.ok) {
+        const body = (await treeRes.json()) as {
+          tree?: Array<{ path?: string; type?: string; size?: number }>;
+          truncated?: boolean;
+        };
+        tree = (body.tree ?? [])
+          .filter((entry) => entry.type === "blob" && typeof entry.path === "string")
+          .map((entry) => ({ path: entry.path as string, size: entry.size ?? 0 }));
+        treeTruncated = body.truncated === true;
+      }
+
       return {
-        slug,
-        htmlUrl: repo.html_url,
-        createdAt: repo.created_at ?? null,
-        pushedAt: repo.pushed_at ?? null,
-        fork: repo.fork === true,
-        parent: repo.parent?.full_name ?? null,
-        stars: repo.stargazers_count ?? 0,
-        commitCount,
-        firstCommit,
-        recent: recent.slice(0, 8),
-        authors: [...new Set(recent.map((commit) => commit.author))],
+        facts: {
+          slug,
+          htmlUrl: repo.html_url,
+          createdAt: repo.created_at ?? null,
+          pushedAt: repo.pushed_at ?? null,
+          fork: repo.fork === true,
+          parent: repo.parent?.full_name ?? null,
+          stars: repo.stargazers_count ?? 0,
+          commitCount,
+          firstCommit,
+          recent: recent.slice(0, 8),
+          authors: [...new Set(recent.slice(0, 30).map((commit) => commit.author))],
+        },
+        forensic: { commits: listed.map(toDetail), commitCount, tree, treeTruncated },
       };
     } catch (error) {
       console.warn("[repo] github facts lookup failed", error);
@@ -283,4 +353,14 @@ export function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
     if (result === null) facts.delete(key);
   });
   return value;
+}
+
+/** The repository facts shown to reviewers. Never rejects. */
+export async function fetchRepoFacts(url: string): Promise<RepoFacts | null> {
+  return (await loadRepo(url))?.facts ?? null;
+}
+
+/** Commits and files for the forensic checks, from the same cached lookup. Never rejects. */
+export async function fetchRepoForensicData(url: string): Promise<RepoForensicData | null> {
+  return (await loadRepo(url))?.forensic ?? null;
 }

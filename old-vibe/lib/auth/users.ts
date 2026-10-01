@@ -1,4 +1,5 @@
 import { and, eq, ne, sql } from "drizzle-orm";
+import { cache } from "react";
 
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -58,10 +59,11 @@ export async function upsertUser(claims: HcaClaims) {
   return row;
 }
 
-export async function getCurrentUser() {
+/** Looked up once per request: the page, its access check and the app shell all share it. */
+export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
 
   const rows = await getDb().select().from(users).where(eq(users.sub, session.sub)).limit(1);
   return rows[0] ?? null;
-}
+});

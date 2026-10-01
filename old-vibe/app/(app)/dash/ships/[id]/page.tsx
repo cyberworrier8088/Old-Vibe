@@ -1,6 +1,7 @@
 import { and, asc, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
@@ -10,8 +11,9 @@ import { saveStreak } from "@/lib/hackatime/streak";
 import { banStatus, formatBanEnd } from "@/lib/ladder";
 import { countViolations, historyFor } from "@/lib/moderation";
 import { buildTimeline, gatherEvidence } from "@/lib/review/evidence";
+import { analyseForensics } from "@/lib/review/forensics";
 import { buildJustification } from "@/lib/review/justification";
-import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
+import { fetchRepoForensicData, fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { ReviewWorkstation } from "./ReviewWorkstation";
 
@@ -29,8 +31,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   if (!(await requireOrganizer())) notFound();
 
   const { id } = await params;
+  const db = getDb();
 
-  const [row] = await getDb()
+  const [row] = await db
     .select({ project: projects, maker: users })
     .from(projects)
     .innerJoin(users, eq(projects.userSub, users.sub))
@@ -40,41 +43,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   if (!row) notFound();
   const { project, maker } = row;
 
-  const journals = await getDb()
-    .select()
-    .from(projectJournals)
-    .where(eq(projectJournals.projectId, id));
-
-  // Query sibling projects by same maker for double-dipping detection
-  const siblingProjects = await getDb()
-    .select({
-      id: projects.id,
-      title: projects.title,
-      hackatimeProjects: projects.hackatimeProjects,
-      decision: projects.decision,
-      approvedMinutes: projects.approvedMinutes,
-      trackedSeconds: projects.trackedSeconds,
-      submittedAt: projects.submittedAt,
-    })
-    .from(projects)
-    .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id)));
-
-  // The next submission in the queue (oldest first) that is not this one.
-  const [nextInQueue] = await getDb()
-    .select({ id: projects.id, title: projects.title })
-    .from(projects)
-    .where(and(isNotNull(projects.submittedAt), isNull(projects.decision), ne(projects.id, id)))
-    .orderBy(asc(projects.submittedAt))
-    .limit(1);
-
-  const [violations, moderationLog] = await Promise.all([
-    countViolations(maker.sub),
-    historyFor(maker.sub),
-  ]);
-  const ban = banStatus(maker);
-
-  // Outside lookups start now and stream into the page, so a slow GitHub or unified database
-  // never holds it up. Neither promise rejects.
+  // Outside lookups start first and stream into the page, so a slow GitHub or unified database
+  // never holds it up. None of these promises rejects.
   const readme = project.repoUrl ? fetchRepoReadmeContent(project.repoUrl) : Promise.resolve(null);
   const evidence = gatherEvidence({
     repoUrl: project.repoUrl,
@@ -82,11 +52,49 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     githubUsername: null,
     slackId: maker.slackId,
   });
+  const forensicData = project.repoUrl ? fetchRepoForensicData(project.repoUrl) : Promise.resolve(null);
 
-  // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
-  const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
+  // Everything else needs only the project, so it runs at once rather than one query after another:
+  // each trip to a hosted database costs a few hundred milliseconds.
+  const [journals, siblingProjects, [nextInQueue], violations, moderationLog, audit] = await Promise.all([
+    db.select().from(projectJournals).where(eq(projectJournals.projectId, id)),
+    // The maker's other projects, for the double dipping check.
+    db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        hackatimeProjects: projects.hackatimeProjects,
+        decision: projects.decision,
+        approvedMinutes: projects.approvedMinutes,
+        trackedSeconds: projects.trackedSeconds,
+        submittedAt: projects.submittedAt,
+      })
+      .from(projects)
+      .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id))),
+    // The next submission in the queue (oldest first) that is not this one.
+    db
+      .select({ id: projects.id, title: projects.title })
+      .from(projects)
+      .where(and(isNotNull(projects.submittedAt), isNull(projects.decision), ne(projects.id, id)))
+      .orderBy(asc(projects.submittedAt))
+      .limit(1),
+    countViolations(maker.sub),
+    historyFor(maker.sub),
+    // Hackatime, counting only work since the start.
+    getMakerProjectBreakdown(maker, project.hackatimeProjects),
+  ]);
+  const ban = banStatus(maker);
 
-  const review = evidence.then((found) => {
+  // The page shows the streak Hackatime reports now; storing it can happen after the response.
+  const makerStreak =
+    typeof audit.streakDays === "number" ? Math.max(0, Math.floor(audit.streakDays)) : maker.streak;
+  if (makerStreak !== maker.streak) after(() => saveStreak(maker.sub, makerStreak, maker.streak));
+
+  // The edited file list only feeds the checks below; the page itself does not need it.
+  const { entityPaths = [], ...auditForPage } = audit;
+
+  const review = Promise.all([evidence, forensicData]).then(([found, data]) => {
+    const fraud = audit.fraudAnalysis;
     const timeline = buildTimeline({
       evidence: found,
       eventStart: EVENT_START_DATE,
@@ -95,7 +103,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
       lastHeartbeatAt: audit.lastHeartbeatAt ?? null,
       makerGithub: audit.profile?.github_username ?? null,
     });
-    const fraud = audit.fraudAnalysis;
+    const forensics = analyseForensics({
+      data,
+      entityPaths,
+      sessions: fraud?.sessionClusters ?? [],
+      trackedSeconds: audit.totalSeconds,
+      eventStart: EVENT_START_DATE,
+    });
+    const flags = [...timeline.flags, ...forensics.flags];
     const justification = buildJustification({
       hackatimeProjects: project.hackatimeProjects,
       trackedSeconds: audit.totalSeconds,
@@ -118,21 +133,30 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
       repo: found.repo,
       priorShips: found.priorShips,
       demo: found.demo,
-      flags: timeline.flags,
+      forensics: forensics.checks,
+      eventStart: EVENT_START_DATE,
+      flags,
     });
-    return { evidence: found, ...timeline, justification };
+    return {
+      evidence: found,
+      events: timeline.events,
+      flags,
+      forensics: forensics.checks,
+      // The tracked hours scaled by the share of sessions a commit backs up.
+      commitBackedHours:
+        forensics.commitBackedShare === null
+          ? null
+          : Math.round(audit.totalDecimalHours * forensics.commitBackedShare * 10) / 10,
+      eventStart: EVENT_START_DATE,
+      justification,
+    };
   });
-
-  const makerStreak =
-    typeof audit.streakDays === "number"
-      ? await saveStreak(maker.sub, audit.streakDays, maker.streak)
-      : maker.streak;
 
   return (
     <ReviewWorkstation
       project={project}
       maker={maker}
-      audit={audit}
+      audit={auditForPage}
       readme={readme}
       review={review}
       journals={journals}

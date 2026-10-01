@@ -142,6 +142,8 @@ export type ProjectAuditBreakdown = {
   streakDays?: number | null;
   allLanguages?: string[];
   rawHeartbeats?: HackatimeHeartbeat[];
+  /** Every distinct file edited on the claimed projects since the start, for checking against the repo. */
+  entityPaths?: string[];
   /** First and last heartbeat on the claimed projects, epoch seconds, from the full stream. */
   firstHeartbeatAt?: number | null;
   lastHeartbeatAt?: number | null;
@@ -198,6 +200,12 @@ export async function getPickerProjects(
     if (error instanceof Error && error.message.includes("401")) await forget(user.sub);
     return null;
   }
+}
+
+function distinctEntities(heartbeats: HackatimeHeartbeat[]): string[] {
+  const seen = new Set<string>();
+  for (const hb of heartbeats) if (hb.entity) seen.add(hb.entity);
+  return [...seen];
 }
 
 function heartbeatSpan(heartbeats: HackatimeHeartbeat[]) {
@@ -322,32 +330,17 @@ async function buildMakerProjectBreakdown(
         }
       }
 
-      if (!queryStart) {
-        queryStart = `${EVENT_START_DATE}T00:00:00Z`;
-      }
+      // Only work after the start counts, so nothing earlier is analysed or shown either.
+      const eventStart = `${EVENT_START_DATE}T00:00:00Z`;
+      if (!queryStart || Date.parse(queryStart) < Date.parse(eventStart)) queryStart = eventStart;
 
       const hbRes = await getHackatimeHeartbeats(token, queryStart, queryEnd);
       allHeartbeats = hbRes.heartbeats || [];
 
-      let matching = allHeartbeats.filter(
+      // No fallback to older heartbeats: a project with none since the start has nothing to count.
+      rawHeartbeats = allHeartbeats.filter(
         (hb) => hb.project && claimedSet.has(hb.project.trim().toLowerCase()),
       );
-
-      // If matching is 0 but claimedProjectNames is non-empty, try fallback to all heartbeats
-      if (matching.length === 0 && claimedProjectNames.length > 0) {
-        const fullRes = await getHackatimeHeartbeats(token);
-        if (fullRes.heartbeats?.length) {
-          const olderMatching = fullRes.heartbeats.filter(
-            (hb) => hb.project && claimedSet.has(hb.project.trim().toLowerCase()),
-          );
-          if (olderMatching.length > 0) {
-            matching = olderMatching;
-            allHeartbeats = fullRes.heartbeats;
-          }
-        }
-      }
-
-      rawHeartbeats = matching;
       totalHeartbeatsCount = rawHeartbeats.length;
 
       // Extract other projects summary for reviewer awareness
@@ -1202,6 +1195,7 @@ async function buildMakerProjectBreakdown(
       streakDays,
       allLanguages: Array.from(allLanguagesSet),
       rawHeartbeats: rawHeartbeats.slice(0, 500),
+      entityPaths: distinctEntities(rawHeartbeats),
       ...heartbeatSpan(rawHeartbeats),
       totalHeartbeatsCount,
       fraudAnalysis,
@@ -1252,6 +1246,7 @@ async function buildMakerProjectBreakdown(
     streakDays,
     allLanguages: Array.from(allLanguagesSet),
     rawHeartbeats: rawHeartbeats.slice(0, 500),
+    entityPaths: distinctEntities(rawHeartbeats),
     ...heartbeatSpan(rawHeartbeats),
     totalHeartbeatsCount,
     fraudAnalysis,

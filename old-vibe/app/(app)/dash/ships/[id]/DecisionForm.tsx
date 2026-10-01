@@ -27,6 +27,28 @@ function JustificationBox({ review, boxRef }: { review: Promise<ReviewEvidence>;
   return <Textarea ref={boxRef} defaultValue={justification} rows={10} className={styles.justification} />;
 }
 
+/** Deflates to the hours commits back up, the cut Hack Club reviewers usually make by hand. */
+function CommitBackedButton({
+  review,
+  onPick,
+}: {
+  review: Promise<ReviewEvidence>;
+  onPick: (hours: number) => void;
+}) {
+  const { commitBackedHours } = use(review);
+  if (commitBackedHours === null) return null;
+  return (
+    <button
+      type="button"
+      className={styles.quickBtn}
+      onClick={() => onPick(commitBackedHours)}
+      title="Hours from coding sessions that a commit followed within two hours"
+    >
+      Backed by commits: {commitBackedHours}h
+    </button>
+  );
+}
+
 const OPTIONS = [
   { key: "approved", label: "Approve", tone: "ok" },
   { key: "changes", label: "Ask for Changes", tone: "warn" },
@@ -277,6 +299,11 @@ export function DecisionForm({
                 >
                   50%: {Math.round(defaultHours * 0.5 * 10) / 10}h
                 </button>
+                {review ? (
+                  <Suspense fallback={null}>
+                    <CommitBackedButton review={review} onPick={(value) => setHours(String(value))} />
+                  </Suspense>
+                ) : null}
               </div>
             ) : null}
           </Field>

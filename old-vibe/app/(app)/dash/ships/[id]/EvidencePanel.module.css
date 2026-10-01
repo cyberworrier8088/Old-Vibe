@@ -135,6 +135,133 @@
   white-space: nowrap;
 }
 
+/* Fraud checks: one row per check, coloured by how it came out. */
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkOk,
+.checkWarn,
+.checkBad,
+.checkUnknown {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 12px;
+  background: var(--raised);
+  border-left: 3px solid;
+  border-radius: 6px;
+}
+
+.checkOk {
+  border-color: var(--ok);
+}
+
+.checkWarn {
+  background: rgb(var(--warn-rgb) / 0.08);
+  border-color: var(--warn);
+}
+
+.checkBad {
+  background: rgb(var(--bad-rgb) / 0.08);
+  border-color: var(--bad);
+}
+
+.checkUnknown {
+  border-color: var(--rule);
+}
+
+.checkHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--s3);
+}
+
+.checkLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.checkValue {
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--soft);
+}
+
+.checkOk .checkValue {
+  color: var(--ok);
+}
+
+.checkWarn .checkValue {
+  color: var(--warn);
+}
+
+.checkBad .checkValue {
+  color: var(--bad);
+}
+
+.checkDetail {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--lilac);
+}
+
+.checkItems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: var(--soft);
+}
+
+.checkItems li {
+  overflow-wrap: anywhere;
+}
+
+.checkItems a {
+  color: inherit;
+}
+
+/* The maker's other projects: context, not a flag, so folded away. */
+.others {
+  margin-top: var(--s2);
+}
+
+.others summary {
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--soft);
+  cursor: pointer;
+}
+
+.others[open] summary {
+  margin-bottom: 6px;
+}
+
+.others p {
+  margin-bottom: 6px;
+}
+
+.before,
+.during {
+  display: block;
+  font-size: 10.5px;
+  color: var(--lilac);
+}
+
+.during {
+  color: var(--warn);
+}
+
 /* Only needed once the column headings are hidden on a phone. */
 .cellLabel {
   display: none;

@@ -19,7 +19,9 @@ function create() {
     max: 10,
     ssl: wantsTls(url) ? "require" : undefined,
     connect_timeout: 10,
-    idle_timeout: 30,
+    // Opening a TLS connection to a hosted database costs a second or more, so keep connections
+    // while a reviewer reads a page instead of dropping them after thirty seconds.
+    idle_timeout: 300,
     // A runaway query should fail, not hold a connection and the page behind it.
     connection: { statement_timeout: 30_000, idle_in_transaction_session_timeout: 30_000 },
   });

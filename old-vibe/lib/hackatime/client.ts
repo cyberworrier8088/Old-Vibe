@@ -101,6 +101,8 @@ async function get<T>(token: string, path: string, params?: Record<string, strin
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
+    // A stalled Hackatime must not hold a page open forever.
+    signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) throw new Error(`hackatime ${path} returned ${response.status}`);
   return (await response.json()) as T;
