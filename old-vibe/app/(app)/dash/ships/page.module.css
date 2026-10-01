@@ -1,34 +1,34 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s2);
+  gap: 14px;
+  border-bottom: 1px solid var(--rule);
 }
 
 .filter {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 8px 2px;
   font-family: var(--data);
   font-size: 13px;
   color: var(--soft);
   text-decoration: none;
-  background: var(--night);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   transition: all 0.15s ease;
 }
 
 .filter:hover {
-  border-color: var(--glow);
   color: var(--cream);
-  background: var(--raised);
 }
 
 .on {
-  border-color: var(--lamp);
-  color: var(--lamp);
-  background: rgb(var(--warn-rgb) / 0.08);
+  border-bottom-color: var(--orchid);
+  color: var(--cream);
+  background: transparent;
 }
 
 .filterCount {
@@ -43,8 +43,8 @@
 }
 
 .on .filterCount {
-  background: rgb(var(--warn-rgb) / 0.2);
-  color: var(--lamp);
+  background: var(--raised);
+  color: var(--cream);
   font-weight: 600;
 }
 
@@ -153,17 +153,15 @@
   color: var(--on-lamp) !important;
   background: var(--lamp);
   border: 1px solid var(--lamp);
-  border-radius: var(--radius-pill);
+  border-radius: 6px;
   text-decoration: none;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgb(var(--shadow-rgb) / 0.2);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .actionReviewPrimary:hover {
-  background: var(--soft);
-  border-color: var(--soft);
+  background: var(--orchid-hover);
+  border-color: var(--orchid-hover);
   color: var(--on-lamp) !important;
-  transform: translateY(-1px);
 }
 
 .none {

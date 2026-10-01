@@ -26,12 +26,12 @@ const WHEN = new Intl.DateTimeFormat("en-GB", {
 });
 
 const FILTERS: { key: string; label: string; matches: (status: ProjectStatus) => boolean }[] = [
-  { key: "open", label: "waiting", matches: (status) => status === "queued" },
-  { key: "draft", label: "draft", matches: (status) => status === "draft" },
-  { key: "all", label: "all projects", matches: () => true },
-  { key: "approved", label: "approved", matches: (status) => status === "approved" },
-  { key: "changes", label: "changes asked", matches: (status) => status === "changes" },
-  { key: "rejected", label: "not approved", matches: (status) => status === "rejected" },
+  { key: "open", label: "Needs review", matches: (status) => status === "queued" },
+  { key: "draft", label: "Drafts", matches: (status) => status === "draft" },
+  { key: "all", label: "All submissions", matches: () => true },
+  { key: "approved", label: "Approved", matches: (status) => status === "approved" },
+  { key: "changes", label: "Changes requested", matches: (status) => status === "changes" },
+  { key: "rejected", label: "Not approved", matches: (status) => status === "rejected" },
 ];
 
 export default async function ShipsPage({
@@ -90,12 +90,12 @@ export default async function ShipsPage({
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>maker</th>
-                  <th>project</th>
-                  <th>submitted</th>
-                  <th>hours</th>
-                  <th>status</th>
-                  <th style={{ textAlign: "right" }}>action</th>
+                  <th>Maker</th>
+                  <th>Project</th>
+                  <th>Submitted</th>
+                  <th>Hours</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,7 +113,7 @@ export default async function ShipsPage({
                           {project.title}
                         </Link>
                         <span className={styles.sub}>
-                          {project.hackatimeProjects.join(", ") || "no hackatime projects"}
+                          Hackatime: {project.hackatimeProjects.join(", ") || "none claimed"}
                         </span>
                       </td>
                       <td>{project.submittedAt ? WHEN.format(project.submittedAt) : ""}</td>
@@ -138,7 +138,7 @@ export default async function ShipsPage({
                           href={`/dash/ships/${project.id}`}
                           className={isQueued ? styles.actionReviewPrimary : styles.actionReview}
                         >
-                          {isQueued ? "Review →" : "Inspect →"}
+                          {isQueued ? "Review" : "Inspect"} →
                         </Link>
                       </td>
                     </tr>

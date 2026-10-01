@@ -1,8 +1,10 @@
 "use client";
 
-import { Suspense, use, useState } from "react";
+import { Suspense, useState } from "react";
 import type { Project, ProjectJournal } from "@/lib/db/schema";
 import type { ProjectAuditBreakdown } from "@/lib/hackatime/projects";
+import { EvidenceBadge, EvidencePanel } from "./EvidencePanel";
+import type { ReviewEvidence } from "./EvidencePanel";
 import { ReadmeViewer } from "./ReadmeViewer";
 import { FraudInspector } from "./FraudInspector";
 import styles from "./page.module.css";
@@ -25,14 +27,11 @@ export type SiblingProject = {
 };
 
 /** The badge only appears once the README has arrived and turned out to exist. */
-function ReadmeBadge({ readme }: { readme: Promise<string | null> }) {
-  return use(readme) ? <span className={styles.tabBadge}>Verified</span> : null;
-}
-
 export function ReviewTabs({
   project,
   audit,
   readme,
+  review,
   alternateRepoUrl,
   journals,
   totalHoursDecimal,
@@ -43,13 +42,15 @@ export function ReviewTabs({
   audit: ProjectAuditBreakdown;
   /** Started by the server and streamed in, so the page does not wait on GitHub. */
   readme: Promise<string | null>;
+  /** GitHub, other YSWS programs, demo link and the timeline. Streamed in. */
+  review: Promise<ReviewEvidence>;
   alternateRepoUrl: string | null;
   journals: ProjectJournal[];
   totalHoursDecimal: number;
   totalHoursFormatted: string;
   siblingProjects?: SiblingProject[];
 }) {
-  const [activeTab, setActiveTab] = useState<"readme" | "hackatime" | "fraud">("readme");
+  const [activeTab, setActiveTab] = useState<"project" | "activity" | "fraud">("project");
 
   return (
     <div className={styles.tabsContainer}>
@@ -58,28 +59,28 @@ export function ReviewTabs({
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === "readme"}
-          className={[styles.tabBtn, activeTab === "readme" ? styles.tabBtnActive : null]
+          aria-selected={activeTab === "project"}
+          className={[styles.tabBtn, activeTab === "project" ? styles.tabBtnActive : null]
             .filter(Boolean)
             .join(" ")}
-          onClick={() => setActiveTab("readme")}
+          onClick={() => setActiveTab("project")}
         >
-          <span>Overview and README</span>
+          <span>Project evidence</span>
           <Suspense fallback={null}>
-            <ReadmeBadge readme={readme} />
+            <EvidenceBadge review={review} />
           </Suspense>
         </button>
 
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === "hackatime"}
-          className={[styles.tabBtn, activeTab === "hackatime" ? styles.tabBtnActive : null]
+          aria-selected={activeTab === "activity"}
+          className={[styles.tabBtn, activeTab === "activity" ? styles.tabBtnActive : null]
             .filter(Boolean)
             .join(" ")}
-          onClick={() => setActiveTab("hackatime")}
+          onClick={() => setActiveTab("activity")}
         >
-          <span>Hackatime Audit</span>
+          <span>Coding activity</span>
           <span className={styles.tabBadge}>{totalHoursFormatted}</span>
         </button>
 
@@ -92,7 +93,7 @@ export function ReviewTabs({
             .join(" ")}
           onClick={() => setActiveTab("fraud")}
         >
-          <span>Authenticity and Fraud</span>
+          <span>Integrity review</span>
           {audit.fraudAnalysis ? (
             <span
               className={[
@@ -110,8 +111,8 @@ export function ReviewTabs({
         </button>
       </div>
 
-      {/* Tab 1: Overview & README */}
-      {activeTab === "readme" ? (
+      {/* Project evidence */}
+      {activeTab === "project" ? (
         <div className={styles.tabContent}>
           {project.thumbnailUrl ? (
             <div className={styles.screenshotCard}>
@@ -167,6 +168,16 @@ export function ReviewTabs({
             ) : null}
           </div>
 
+          <Suspense
+            fallback={
+              <p className={styles.githubEvidenceEmpty} role="status">
+                Checking GitHub, other YSWS programs and the demo link...
+              </p>
+            }
+          >
+            <EvidencePanel review={review} />
+          </Suspense>
+
           <ReadmeViewer
             readme={readme}
             repoUrl={project.repoUrl}
@@ -192,8 +203,8 @@ export function ReviewTabs({
         </div>
       ) : null}
 
-      {/* Tab 2: Hackatime Audit & Heartbeats */}
-      {activeTab === "hackatime" ? (
+      {/* Coding activity */}
+      {activeTab === "activity" ? (
         <div className={styles.tabContent}>
           <div className={styles.auditCard}>
             <div className={styles.auditHeader}>
@@ -265,20 +276,10 @@ export function ReviewTabs({
               ))}
             </div>
           </div>
-
-          <FraudInspector
-            projectId={project.id}
-            heartbeats={audit.rawHeartbeats}
-            totalHeartbeatsCount={audit.totalHeartbeatsCount}
-            fraudAnalysis={audit.fraudAnalysis}
-            claimedProjects={project.hackatimeProjects}
-            otherProjectsSummary={audit.otherProjectsSummary}
-            siblingProjects={siblingProjects}
-          />
         </div>
       ) : null}
 
-      {/* Tab 3: Fraud & Authenticity */}
+      {/* Integrity review */}
       {activeTab === "fraud" ? (
         <div className={styles.tabContent}>
           <FraudInspector

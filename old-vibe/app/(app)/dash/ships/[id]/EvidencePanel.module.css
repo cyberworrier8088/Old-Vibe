@@ -1,0 +1,296 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--wobble-sm);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+
+.heading {
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.hint {
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: var(--lilac);
+}
+
+.empty,
+.clear {
+  font-size: 13.5px;
+  color: var(--lilac);
+}
+
+.clear {
+  color: var(--ok);
+}
+
+.problem {
+  font-size: 13.5px;
+  color: var(--bad);
+}
+
+.flags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flagBad,
+.flagWarn {
+  padding: 8px 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+
+.flagBad {
+  color: var(--cream);
+  background: rgb(var(--bad-rgb) / 0.1);
+  border-color: var(--bad);
+}
+
+.flagWarn {
+  color: var(--cream);
+  background: rgb(var(--warn-rgb) / 0.1);
+  border-color: var(--warn);
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  padding: 6px 8px;
+  text-align: left;
+  font-family: var(--data);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--lilac);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 7px 8px;
+  color: var(--soft);
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.rowBad td {
+  background: rgb(var(--bad-rgb) / 0.07);
+}
+
+.rowWarn td {
+  background: rgb(var(--warn-rgb) / 0.07);
+}
+
+.program {
+  font-weight: 600;
+  color: var(--cream) !important;
+  white-space: nowrap;
+}
+
+.link {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.num {
+  font-family: var(--data);
+  white-space: nowrap;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid var(--rule);
+  margin-left: 4px;
+}
+
+.event,
+.eventWarn,
+.eventBad {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--s3);
+  padding: 6px 0 6px 16px;
+  font-size: 13px;
+}
+
+.event::before,
+.eventWarn::before,
+.eventBad::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--glow);
+}
+
+.eventWarn::before {
+  border-color: var(--warn);
+  background: var(--warn);
+}
+
+.eventBad::before {
+  border-color: var(--bad);
+  background: var(--bad);
+}
+
+.eventBad .what,
+.eventBad .what a {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.eventWarn .what,
+.eventWarn .what a {
+  color: var(--warn);
+}
+
+.when {
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: var(--lilac);
+  white-space: nowrap;
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--cream);
+  min-width: 0;
+}
+
+.what a,
+.commits a,
+.link a,
+.problem a,
+.clear a {
+  color: inherit;
+}
+
+.detail {
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: var(--lilac);
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--s3);
+  margin: 0;
+}
+
+.facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.facts dt {
+  font-family: var(--data);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--lilac);
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+.commits {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule);
+  font-size: 13.5px;
+}
+
+.commits li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.badgeOk,
+.badgeWarn,
+.badgeBad {
+  font-family: var(--data);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.badgeOk {
+  color: var(--ok);
+  background: rgb(var(--ok-rgb) / 0.12);
+}
+
+.badgeWarn {
+  color: var(--warn);
+  background: rgb(var(--warn-rgb) / 0.14);
+}
+
+.badgeBad {
+  color: var(--bad);
+  background: rgb(var(--bad-rgb) / 0.14);
+}
+
+@media (max-width: 560px) {
+  .event,
+  .eventWarn,
+  .eventBad {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

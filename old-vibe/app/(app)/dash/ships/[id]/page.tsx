@@ -6,16 +6,15 @@ import Link from "next/link";
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { ProjectStatusWord } from "@/components/ui/StatusWord";
-import { PaperIcon } from "@/components/ui/PaperIcon";
 import { requireOrganizer } from "@/lib/auth/organizer";
 import { getDb } from "@/lib/db";
 import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
-import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
-import { paperRateForStreak } from "@/lib/rewards";
+import { EVENT_START_DATE, formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
 import { saveStreak } from "@/lib/hackatime/streak";
 import { banStatus, formatBanEnd } from "@/lib/ladder";
 import { countViolations, historyFor } from "@/lib/moderation";
+import { buildTimeline, gatherEvidence } from "@/lib/review/evidence";
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { DecisionForm } from "./DecisionForm";
@@ -74,12 +73,30 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   ]);
   const ban = banStatus(maker);
 
-  // The README starts loading now but is not awaited: it streams into its tab, so a slow GitHub
-  // never holds up the rest of the page. It cannot reject, which keeps `use()` below safe.
+  // Outside lookups start now and stream into the page, so a slow GitHub or unified database
+  // never holds it up. Neither promise rejects.
   const readme = project.repoUrl ? fetchRepoReadmeContent(project.repoUrl) : Promise.resolve(null);
+  const evidence = gatherEvidence({
+    repoUrl: project.repoUrl,
+    demoUrl: project.demoUrl,
+    githubUsername: null,
+    slackId: maker.slackId,
+  });
 
   // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
   const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
+
+  const review = evidence.then((found) => ({
+    evidence: found,
+    ...buildTimeline({
+      evidence: found,
+      eventStart: EVENT_START_DATE,
+      submittedAt: project.submittedAt ? project.submittedAt.toISOString() : null,
+      firstHeartbeatAt: audit.firstHeartbeatAt ?? null,
+      lastHeartbeatAt: audit.lastHeartbeatAt ?? null,
+      makerGithub: audit.profile?.github_username ?? null,
+    }),
+  }));
 
   const makerStreak =
     typeof audit.streakDays === "number"
@@ -144,6 +161,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
         <div className={styles.headerMain}>
           <div>
+            <div className={styles.eventLabel}>Old-Vibe YSWS</div>
             <h1 className={styles.projectTitleHeading}>{project.title}</h1>
             <div className={styles.submittedMeta}>
               Submitted {project.submittedAt ? WHEN.format(project.submittedAt) : "draft"}
@@ -201,6 +219,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             project={project}
             audit={audit}
             readme={readme}
+            review={review}
             alternateRepoUrl={alternateRepoUrl}
             journals={journals}
             totalHoursDecimal={totalHoursDecimal}
@@ -245,31 +264,20 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             </Panel>
 
             <Panel>
-              <PanelLabel>Maker Overview</PanelLabel>
+              <PanelLabel>Submission details</PanelLabel>
               <div className={styles.makerOverviewList}>
                 <div className={styles.overviewItem}>
-                  <span className={styles.overviewKey}>Email</span>
+                  <span className={styles.overviewKey}>YSWS</span>
+                  <span className={styles.overviewVal}>Old-Vibe</span>
+                </div>
+                <div className={styles.overviewItem}>
+                  <span className={styles.overviewKey}>Maker email</span>
                   <span className={styles.overviewVal}>{maker.email}</span>
                 </div>
                 <div className={styles.overviewItem}>
-                  <span className={styles.overviewKey}>Hackatime Project(s)</span>
+                  <span className={styles.overviewKey}>Claimed Hackatime projects</span>
                   <span className={styles.overviewVal}>
                     {project.hackatimeProjects.join(", ") || "None"}
-                  </span>
-                </div>
-                <div className={styles.overviewItem}>
-                  <span className={styles.overviewKey}>Tracked Eligible</span>
-                  <span className={styles.overviewValHighlight}>
-                    {totalHoursFormatted} ({totalHoursDecimal}h)
-                  </span>
-                </div>
-                <div className={styles.overviewItem}>
-                  <span className={styles.overviewKey}>Paper Bonus Rate</span>
-                  <span
-                    className={styles.overviewVal}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                  >
-                    {paperRateForStreak(makerStreak).toFixed(1)} <PaperIcon size={14} /> / hr
                   </span>
                 </div>
               </div>

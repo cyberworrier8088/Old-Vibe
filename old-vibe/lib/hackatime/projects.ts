@@ -139,6 +139,9 @@ export type ProjectAuditBreakdown = {
   streakDays?: number | null;
   allLanguages?: string[];
   rawHeartbeats?: HackatimeHeartbeat[];
+  /** First and last heartbeat on the claimed projects, epoch seconds, from the full stream. */
+  firstHeartbeatAt?: number | null;
+  lastHeartbeatAt?: number | null;
   totalHeartbeatsCount?: number;
   fraudAnalysis?: FraudAnalysis;
   otherProjectsSummary?: Array<{ name: string; heartbeats: number }>;
@@ -192,6 +195,17 @@ export async function getPickerProjects(
     if (error instanceof Error && error.message.includes("401")) await forget(user.sub);
     return null;
   }
+}
+
+function heartbeatSpan(heartbeats: HackatimeHeartbeat[]) {
+  let first: number | null = null;
+  let last: number | null = null;
+  for (const hb of heartbeats) {
+    if (typeof hb.time !== "number") continue;
+    if (first === null || hb.time < first) first = hb.time;
+    if (last === null || hb.time > last) last = hb.time;
+  }
+  return { firstHeartbeatAt: first, lastHeartbeatAt: last };
 }
 
 const BREAKDOWN_TTL_MS = 60_000;
@@ -1181,6 +1195,7 @@ async function buildMakerProjectBreakdown(
       streakDays,
       allLanguages: Array.from(allLanguagesSet),
       rawHeartbeats: rawHeartbeats.slice(0, 500),
+      ...heartbeatSpan(rawHeartbeats),
       totalHeartbeatsCount,
       fraudAnalysis,
       otherProjectsSummary,
@@ -1230,6 +1245,7 @@ async function buildMakerProjectBreakdown(
     streakDays,
     allLanguages: Array.from(allLanguagesSet),
     rawHeartbeats: rawHeartbeats.slice(0, 500),
+    ...heartbeatSpan(rawHeartbeats),
     totalHeartbeatsCount,
     fraudAnalysis,
     otherProjectsSummary,
