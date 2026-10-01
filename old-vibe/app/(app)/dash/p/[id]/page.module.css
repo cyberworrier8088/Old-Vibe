@@ -8,12 +8,13 @@
 .thumb {
   height: 180px;
   border-radius: var(--wobble-sm);
-  background: linear-gradient(135deg, #241f30, var(--raised));
+  background: var(--raised);
+  border: 1px solid var(--rule);
   display: grid;
   place-items: center;
   font-family: var(--data);
   font-size: 12px;
-  color: var(--edge);
+  color: var(--lilac);
   overflow: hidden;
 }
 

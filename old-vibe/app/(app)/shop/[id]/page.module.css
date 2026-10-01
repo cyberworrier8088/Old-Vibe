@@ -19,7 +19,8 @@
   height: 240px;
   font-size: 40px;
   border-radius: var(--wobble-sm);
-  background: linear-gradient(135deg, var(--raised), #241f30);
+  background: var(--raised);
+  border: 1px solid var(--rule);
 }
 
 .description {
