@@ -13,6 +13,7 @@ export function HackatimePicker({
   options,
   value,
   onChange,
+  minSeconds,
   id,
   name,
   "aria-describedby": describedBy,
@@ -20,6 +21,8 @@ export function HackatimePicker({
   options: PickerProject[];
   value: string[];
   onChange: (next: string[]) => void;
+  /** Time the picked projects need to add up to. Shows how far along they are. */
+  minSeconds?: number;
   id?: string;
   name?: string;
   "aria-describedby"?: string;
@@ -110,6 +113,13 @@ export function HackatimePicker({
           ) : (
             <>
               {value.length} picked · <b>{formatHours(totalSeconds)}</b>
+              {minSeconds ? (
+                totalSeconds >= minSeconds ? (
+                  <span className={styles.enough}> · enough to submit</span>
+                ) : (
+                  <span className={styles.short}> · needs {formatHours(minSeconds - totalSeconds)} more</span>
+                )
+              ) : null}
             </>
           )}
         </span>

@@ -11,6 +11,7 @@ import { projects, users } from "@/lib/db/schema";
 import { getReviewBackend, reviewIsExternal } from "@/lib/review";
 import type { ReviewSubmission } from "@/lib/review";
 import { getPickerProjects } from "@/lib/hackatime/projects";
+import { MIN_SUBMISSION_SECONDS } from "@/lib/rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +75,11 @@ export async function POST(request: Request) {
     const proj = pickerProjects.find((p) => p.key === key);
     return sum + (proj ? proj.seconds : 0);
   }, 0);
-  if (totalSeconds < 7200) { // 2 hours
-    return invalid("hackatime_projects", "You must have at least 2 hours (7200 seconds) of Hackatime tracked to submit this project.");
+  if (totalSeconds < MIN_SUBMISSION_SECONDS) {
+    return invalid(
+      "hackatime_projects",
+      "You need at least 2 hours of Hackatime time on the projects you pick before you can submit.",
+    );
   }
 
   const problem = validateSubmission(candidate);

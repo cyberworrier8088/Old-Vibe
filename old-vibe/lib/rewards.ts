@@ -4,6 +4,9 @@ export type Reward = {
   label: string;
 };
 
+/** Tracked Hackatime time a project needs before it can be submitted: two hours. */
+export const MIN_SUBMISSION_SECONDS = 7200;
+
 export const PAPER_PER_HOUR = 4;
 export const PAPER_MAX_RATE = 6;
 export const BEANS_PER_HOUR = PAPER_PER_HOUR;

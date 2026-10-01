@@ -10,6 +10,7 @@ import { Field, Input, Textarea } from "@/components/ui/Field";
 import { ThumbnailField } from "@/components/ui/ThumbnailField";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import type { PickerProject } from "@/lib/hackatime/projects";
+import { MIN_SUBMISSION_SECONDS } from "@/lib/rewards";
 
 import styles from "./SubmitForm.module.css";
 
@@ -153,7 +154,12 @@ export function SubmitForm({ projects, draft }: { projects: PickerProject[], dra
           help="Pick the ones you worked on for this."
           error={errorFor("hackatime_projects")}
         >
-          <HackatimePicker options={projects} value={picked} onChange={setPicked} />
+          <HackatimePicker
+            options={projects}
+            value={picked}
+            onChange={setPicked}
+            minSeconds={MIN_SUBMISSION_SECONDS}
+          />
         </Field>
 
         <div className={styles.row}>

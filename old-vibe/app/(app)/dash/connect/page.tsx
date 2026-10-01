@@ -7,8 +7,10 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Panel, PanelLabel } from "@/components/ui/Panel";
 import { StatusWord } from "@/components/ui/StatusWord";
 import { getCurrentUser } from "@/lib/auth/users";
+import { getConnectedIdentity } from "@/lib/hackatime/profile";
 import { getPickerProjects } from "@/lib/hackatime/projects";
 
+import { DisconnectButton } from "./DisconnectButton";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "hackatime" };
@@ -36,7 +38,10 @@ export default async function ConnectPage({
 
   const { status } = await searchParams;
   const banner = status ? STATUS[status] : undefined;
-  const projects = await getPickerProjects(user);
+  const [projects, identity] = await Promise.all([
+    getPickerProjects(user),
+    getConnectedIdentity(user),
+  ]);
   const connected = projects !== null;
 
   return (
@@ -61,9 +66,16 @@ export default async function ConnectPage({
         {connected ? (
           <div className={styles.actions}>
             <StatusWord tone="ok">connected</StatusWord>
+            {identity?.github || identity?.slackId ? (
+              <span className={styles.identity}>
+                as <b>{identity.github ? "@" + identity.github : identity.slackId}</b>
+                {identity.github ? " on GitHub" : " on Slack"}
+              </span>
+            ) : null}
             <ButtonLink href="/api/hackatime/connect" variant="quiet">
               reconnect
             </ButtonLink>
+            <DisconnectButton />
           </div>
         ) : (
           <div className={styles.actions}>

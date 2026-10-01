@@ -33,3 +33,17 @@
   flex-wrap: wrap;
   gap: var(--s3);
 }
+
+.actions {
+  align-items: center;
+}
+
+.identity {
+  font-family: var(--data);
+  font-size: 13.5px;
+  color: var(--lilac);
+}
+
+.identity b {
+  color: var(--cream);
+}

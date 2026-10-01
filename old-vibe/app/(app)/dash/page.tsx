@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { ActivityPanel } from "@/components/app/ActivityPanel";
 import { AppShell } from "@/components/app/AppShell";
 import { Banner } from "@/components/ui/Banner";
 import { ButtonLink } from "@/components/ui/Button";
@@ -16,6 +17,8 @@ import { projects } from "@/lib/db/schema";
 import { isOpen, projectStatus } from "@/lib/projects/status";
 import { balanceFor, hoursLabel } from "@/lib/beans";
 import { PaperIcon } from "@/components/ui/PaperIcon";
+import { getActivity } from "@/lib/hackatime/activity";
+import { syncStreak } from "@/lib/hackatime/streak";
 import { paperRateForStreak } from "@/lib/rewards";
 
 import styles from "./page.module.css";
@@ -29,13 +32,15 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=%2Fdash");
 
-  const [mine, balances] = await Promise.all([
+  const [mine, balances, activity, streak] = await Promise.all([
     getDb()
       .select()
       .from(projects)
       .where(eq(projects.userSub, user.sub))
       .orderBy(desc(projects.createdAt)),
-    balanceFor(user.sub)
+    balanceFor(user.sub),
+    getActivity(user),
+    syncStreak(user),
   ]);
 
   if (mine.length === 0) {
@@ -47,6 +52,7 @@ export default async function DashboardPage() {
             ship.
           </Banner>
         ) : null}
+        {activity ? <ActivityPanel activity={activity} /> : null}
         <EmptyState
           title="nothing here yet"
           action={
@@ -86,7 +92,7 @@ export default async function DashboardPage() {
             </span>
           }
           value={balances.paper}
-          sub={`${paperRateForStreak(user.streak).toFixed(1)} per approved hour`}
+          sub={`${paperRateForStreak(streak).toFixed(1)} per approved hour`}
         />
         {balances.gold > 0 && (
           <StatCard
@@ -101,7 +107,7 @@ export default async function DashboardPage() {
         )}
         <StatCard
           label="streak"
-          value={user.streak ?? 0}
+          value={streak}
           sub="days of consecutive coding"
         />
         <StatCard
@@ -110,6 +116,8 @@ export default async function DashboardPage() {
           sub={waiting.length === 0 ? "nothing in the queue" : "we will message you on Slack"}
         />
       </div>
+
+      {activity ? <ActivityPanel activity={activity} /> : null}
 
       <Panel>
         <div className={styles.head}>

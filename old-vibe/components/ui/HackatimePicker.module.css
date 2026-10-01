@@ -143,3 +143,11 @@
   font-size: 14px;
   color: var(--muted);
 }
+
+.enough {
+  color: var(--ok);
+}
+
+.short {
+  color: var(--warn);
+}
