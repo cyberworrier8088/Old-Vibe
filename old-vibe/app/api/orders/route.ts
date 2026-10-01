@@ -2,6 +2,7 @@ import { and, eq, gt, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/users";
+import { banBlock } from "@/lib/moderation";
 import { readAddress, validateAddress } from "@/lib/address";
 import { getDb } from "@/lib/db";
 import { beansLedger, items, orders, users } from "@/lib/db/schema";
@@ -26,6 +27,8 @@ function invalid(field: string, message: string) {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  const banned = await banBlock(user);
+  if (banned) return banned;
 
   let body: Body;
   try {

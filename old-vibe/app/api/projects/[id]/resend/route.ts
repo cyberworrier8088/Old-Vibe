@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { validateSubmission } from "@/lib/superviewer/payload";
 import { repoHasReadme, repoIsReachable } from "@/lib/superviewer/repo";
 import { getCurrentUser } from "@/lib/auth/users";
+import { banBlock } from "@/lib/moderation";
 import { getDb } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { getReviewBackend } from "@/lib/review";
@@ -26,6 +27,8 @@ type Body = {
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  const banned = await banBlock(user);
+  if (banned) return banned;
 
   const { id } = await params;
   const db = getDb();

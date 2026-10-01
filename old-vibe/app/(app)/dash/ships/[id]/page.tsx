@@ -13,10 +13,13 @@ import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
 import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
 import { paperRateForStreak } from "@/lib/rewards";
+import { banStatus, formatBanEnd } from "@/lib/ladder";
+import { countViolations, historyFor } from "@/lib/moderation";
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
 
 import { DecisionForm } from "./DecisionForm";
 import { ReviewTabs } from "./ReviewTabs";
+import { ViolationForm } from "./ViolationForm";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Superviewer • Review Workstation" };
@@ -63,6 +66,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     })
     .from(projects)
     .where(and(eq(projects.userSub, project.userSub), ne(projects.id, id)));
+
+  const [violations, moderationLog] = await Promise.all([
+    countViolations(maker.sub),
+    historyFor(maker.sub),
+  ]);
+  const ban = banStatus(maker);
 
   // The README starts loading now but is not awaited: it streams into its tab, so a slow GitHub
   // never holds up the rest of the page. It cannot reject, which keeps `use()` below safe.
@@ -210,6 +219,22 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
                 initialDecision={project.decision}
                 initialApprovedMinutes={project.approvedMinutes}
                 initialNote={project.noteToMaker}
+              />
+            </Panel>
+
+            <Panel>
+              <PanelLabel>Rule Violation</PanelLabel>
+              <ViolationForm
+                projectId={project.id}
+                makerName={maker.name}
+                priorViolations={violations}
+                banEnd={ban.banned ? formatBanEnd(ban) : null}
+                history={moderationLog.slice(0, 5).map((entry) => ({
+                  id: entry.id,
+                  kind: entry.kind,
+                  reason: entry.reason,
+                  when: WHEN.format(entry.createdAt),
+                }))}
               />
             </Panel>
 

@@ -2245,7 +2245,17 @@
 }
 
 .deductionIcon {
-  font-size: 20px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-family: var(--data);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--warn);
+  border: 2px solid var(--warn);
 }
 
 .deductionTitle {
@@ -2609,4 +2619,71 @@
   .stickyDeck {
     position: static;
   }
+}
+
+/* Rule violations and bans */
+.violation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.violationIntro {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--lilac);
+}
+
+.violationNext {
+  font-size: 13.5px;
+  color: var(--soft);
+}
+
+.violationConfirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3);
+  font-size: 13.5px;
+  color: var(--cream);
+  background: var(--bad-bg);
+  border: 1px solid var(--bad-border);
+  border-radius: var(--wobble-sm);
+}
+
+.violationConfirm > span {
+  flex: 1 1 100%;
+}
+
+.violationHistory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--rule);
+}
+
+.violationHistory li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--s3);
+  font-size: 12.5px;
+}
+
+.violationKind {
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.violationWhen {
+  font-family: var(--data);
+  font-size: 11px;
+  color: var(--lilac);
+}
+
+.violationReason {
+  grid-column: 1 / -1;
+  color: var(--lilac);
 }

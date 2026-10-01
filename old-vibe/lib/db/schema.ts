@@ -35,7 +35,35 @@ export const users = pgTable("users", {
   country: text("country"),
   streak: integer("streak").notNull().default(0),
   lastCodingDate: date("last_coding_date"),
+
+  // Set by moderation. A ban is active while bannedPermanently is true or bannedUntil is ahead.
+  bannedUntil: timestamp("banned_until", { withTimezone: true }),
+  bannedPermanently: boolean("banned_permanently").notNull().default(false),
 });
+
+export const moderationKind = pgEnum("moderation_kind", ["temp_ban", "permanent_ban", "lifted"]);
+
+/** Every sanction and every lifted ban, kept so a ban can be explained and reviewed later. */
+export const moderationActions = pgTable(
+  "moderation_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userSub: text("user_sub")
+      .notNull()
+      .references(() => users.sub, { onUpdate: "cascade" }),
+    issuedBy: text("issued_by").notNull(),
+    kind: moderationKind("kind").notNull(),
+    reason: text("reason").notNull(),
+    projectId: uuid("project_id"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // A ban that was lifted as a mistake stops counting towards the escalation ladder.
+    voided: boolean("voided").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("moderation_actions_user_idx").on(table.userSub, table.createdAt)],
+);
+
+export type ModerationAction = typeof moderationActions.$inferSelect;
 
 export const decision = pgEnum("decision", ["approved", "changes", "rejected", "withdrawn"]);
 

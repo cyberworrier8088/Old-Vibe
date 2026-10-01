@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 
 import { isOrganizer } from "@/lib/auth/organizer";
 import { getCurrentUser } from "@/lib/auth/users";
+import { banMessage, banStatus } from "@/lib/ladder";
+import { latestBanReason } from "@/lib/moderation";
 import { APP_NAV, ORGANIZER_NAV } from "@/lib/nav";
 import type { NavItem } from "@/lib/nav";
+import { Banner } from "@/components/ui/Banner";
 import { OldManFace } from "@/components/ui/OldManFace";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -24,6 +27,8 @@ export async function AppShell({
 }) {
   const user = await getCurrentUser();
   const nav: NavItem[] = isOrganizer(user) ? [...APP_NAV, ...ORGANIZER_NAV] : APP_NAV;
+  const ban = user ? banStatus(user) : null;
+  const banReason = user && ban?.banned ? await latestBanReason(user.sub) : null;
 
   return (
     <>
@@ -55,11 +60,17 @@ export async function AppShell({
               {action}
             </div>
           </div>
+          {ban?.banned ? (
+            <Banner tone="bad" title="account suspended">
+              {banMessage(ban, banReason)} Questions or an appeal: message the organizers on Hack
+              Club Slack.
+            </Banner>
+          ) : null}
           {children}
         </main>
       </div>
       <a href="https://hackclub.com/" target="_blank" rel="noreferrer" className={styles.madeBy}>
-        OldVibe is made with ♥ by teenagers, for teenagers.
+        Old Vibe is made by teenagers, for teenagers.
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="https://assets.hackclub.com/icon-progress-rounded.svg"
