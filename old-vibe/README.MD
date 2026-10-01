@@ -31,6 +31,8 @@ The ones people trip over:
 - `TOKEN_ENCRYPTION_KEY` encrypts the Hackatime tokens we store.
 - `ORGANIZER_SLACK_IDS` is a comma separated list of Slack member IDs allowed to review. Empty
   means nobody can, and `*` means everyone can, so be careful with it.
+- `CDN_TOKEN` is a Hack Club CDN API key (cdn.hackclub.com/api_keys). Project screenshots upload there.
+  Without it makers can still paste an image link.
 - `HCA_*` are the Hack Club Auth credentials, `HACKATIME_*` are the Hackatime OAuth app.
 - The redirect URIs to register are `APP_URL/api/auth/callback` and
   `APP_URL/api/hackatime/callback`.

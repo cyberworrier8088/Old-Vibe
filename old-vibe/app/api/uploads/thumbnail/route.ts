@@ -16,6 +16,12 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
 
+  // Refuse an oversized upload before reading it. The multipart wrapper adds a little on top of the file.
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > MAX_UPLOAD_BYTES + 64 * 1024) {
+    return NextResponse.json({ error: "too_big", message: MESSAGES.too_big }, { status: 413 });
+  }
+
   let file: File | null = null;
   try {
     const form = await request.formData();
