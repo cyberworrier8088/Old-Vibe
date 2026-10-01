@@ -3,15 +3,18 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-3am}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-3am}
-      POSTGRES_DB: ${POSTGRES_DB:-3am}
+      POSTGRES_USER: ${POSTGRES_USER:-oldvibe_admin}
+      # No default on purpose: a published default password is not a password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD to a long random value}
+      POSTGRES_DB: ${POSTGRES_DB:-oldvibe}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
+      # Loopback only. Put a proxy or a tunnel in front if the team needs to reach it.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-3am} -d ${POSTGRES_DB:-3am}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oldvibe_admin} -d ${POSTGRES_DB:-oldvibe}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -24,7 +27,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-3am}:${POSTGRES_PASSWORD:-3am}@db:5432/${POSTGRES_DB:-3am}
+      DATABASE_URL: postgres://${POSTGRES_USER:-oldvibe_admin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-oldvibe}
       NODE_ENV: production
     ports:
       - "${APP_PORT:-3000}:3000"

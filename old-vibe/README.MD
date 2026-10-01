@@ -22,6 +22,11 @@ reviewer pages. It refuses to run against a database that is not on localhost.
 
 The ones people trip over:
 
+- The database uses two roles. `DATABASE_URL` is a restricted role (`oldvibe_app`) that can only read
+  and write rows: no schema changes, no superuser, no creating roles. `MIGRATION_DATABASE_URL` is the
+  admin role and is only used for migrations. Create the restricted role once with
+  `APP_DB_PASSWORD=<random> npm run db:app-role`. In production the app refuses to start with a weak
+  or default database password, and requires TLS unless the database is on the same machine or network.
 - `SESSION_SECRET` needs to be 32 or more random characters.
 - `TOKEN_ENCRYPTION_KEY` encrypts the Hackatime tokens we store.
 - `ORGANIZER_SLACK_IDS` is a comma separated list of Slack member IDs allowed to review. Empty

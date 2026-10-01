@@ -14,6 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "node --env-file=.env.prod node_modules/drizzle-kit/bin.cjs migrate",
     "db:studio": "drizzle-kit studio",
+    "db:app-role": "tsx --env-file=.env scripts/create-app-role.ts",
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "db:seed-shop": "tsx --env-file=.env scripts/seed-shop.ts",
     "db:seed-shop:prod": "tsx --env-file=.env --env-file=.env.prod scripts/seed-shop.ts",
