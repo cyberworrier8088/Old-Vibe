@@ -9,7 +9,6 @@ export type HackatimeTrustFactor = {
 
 export type HackatimeProfile = {
   id?: string | number;
-  username?: string;
   emails?: string[];
   slack_id?: string;
   github_username?: string;
@@ -104,22 +103,6 @@ export function getHackatimeProjects(token: string): Promise<{ projects: Hackati
   return get<{ projects: HackatimeProject[] }>(token, "/api/v1/authenticated/projects");
 }
 
-export type HackatimeSummaryProject = { name: string; total_seconds: number };
-export type HackatimeSummaryDay = {
-  range?: { start?: string; end?: string; date?: string };
-  projects?: HackatimeSummaryProject[];
-};
-
-export function getHackatimeSummaries(
-  token: string,
-  start: string,
-  end?: string,
-): Promise<{ data: HackatimeSummaryDay[] }> {
-  const params: Record<string, string> = { start };
-  if (end) params.end = end;
-  return get<{ data: HackatimeSummaryDay[] }>(token, "/api/v1/authenticated/summaries", params);
-}
-
 export async function getLatestHeartbeat(token: string): Promise<HackatimeHeartbeat | null> {
   try {
     const res = await get<HackatimeHeartbeat | { heartbeat: null }>(
@@ -156,7 +139,8 @@ export function getHackatimeProjectsFiltered(
   return get<{ projects: HackatimeProject[] }>(token, "/api/v1/authenticated/projects", params);
 }
 
-export async function getHackatimeHeartbeats(
+/** Like getHackatimeHeartbeats, but a failure throws, so callers can tell "no coding" from "no answer". */
+export async function fetchHeartbeats(
   token: string,
   startTime?: string,
   endTime?: string,
@@ -165,16 +149,40 @@ export async function getHackatimeHeartbeats(
   if (startTime) params.start_time = startTime;
   if (endTime) params.end_time = endTime;
 
-  try {
-    const data = await get<{
-      heartbeats?: HackatimeHeartbeat[];
-      total_seconds?: number;
-    }>(token, "/api/v1/my/heartbeats", params);
+  const data = await get<{
+    heartbeats?: HackatimeHeartbeat[];
+    total_seconds?: number;
+  }>(token, "/api/v1/my/heartbeats", params);
 
-    return {
-      heartbeats: Array.isArray(data?.heartbeats) ? data.heartbeats : [],
-      total_seconds: data?.total_seconds,
-    };
+  return {
+    heartbeats: Array.isArray(data?.heartbeats) ? data.heartbeats : [],
+    total_seconds: data?.total_seconds,
+  };
+}
+
+/** Total tracked seconds between two dates (YYYY-MM-DD), as Hackatime itself counts them. */
+export async function getHackatimeHours(
+  token: string,
+  startDate: string,
+  endDate?: string,
+): Promise<number | null> {
+  const params: Record<string, string> = { start_date: startDate };
+  if (endDate) params.end_date = endDate;
+  try {
+    const data = await get<{ total_seconds?: number }>(token, "/api/v1/authenticated/hours", params);
+    return typeof data?.total_seconds === "number" ? data.total_seconds : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getHackatimeHeartbeats(
+  token: string,
+  startTime?: string,
+  endTime?: string,
+): Promise<{ heartbeats: HackatimeHeartbeat[]; total_seconds?: number }> {
+  try {
+    return await fetchHeartbeats(token, startTime, endTime);
   } catch (err) {
     console.warn("[hackatime] getHackatimeHeartbeats failed:", err);
     return { heartbeats: [] };

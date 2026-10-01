@@ -13,6 +13,7 @@ import { projects, projectJournals, users } from "@/lib/db/schema";
 import { projectStatus } from "@/lib/projects/status";
 import { formatHours, getMakerProjectBreakdown } from "@/lib/hackatime/projects";
 import { paperRateForStreak } from "@/lib/rewards";
+import { saveStreak } from "@/lib/hackatime/streak";
 import { banStatus, formatBanEnd } from "@/lib/ladder";
 import { countViolations, historyFor } from "@/lib/moderation";
 import { fetchRepoReadmeContent } from "@/lib/superviewer/repo";
@@ -79,6 +80,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
   // Fetch verified Hackatime audit & heartbeats with cutoff before 11-9-2026 enforced
   const audit = await getMakerProjectBreakdown(maker, project.hackatimeProjects);
+
+  const makerStreak =
+    typeof audit.streakDays === "number"
+      ? await saveStreak(maker.sub, audit.streakDays, maker.streak)
+      : maker.streak;
 
   const totalHoursDecimal =
     audit.totalDecimalHours > 0
@@ -169,9 +175,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               </a>
             ) : null}
 
-            {maker.streak > 0 ? (
+            {makerStreak > 0 ? (
               <span className={styles.streakBadge} title="Current coding streak">
-                {maker.streak}d streak
+                {makerStreak}d streak
               </span>
             ) : null}
 
@@ -213,7 +219,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
                 trackedProjects={project.hackatimeProjects.length}
                 defaultHours={totalHoursDecimal}
                 totalTrackedFormatted={totalHoursFormatted}
-                makerStreak={maker.streak}
+                makerStreak={makerStreak}
                 makerName={maker.name}
                 initialDecided={decided}
                 initialDecision={project.decision}
@@ -263,7 +269,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
                     className={styles.overviewVal}
                     style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
                   >
-                    {paperRateForStreak(maker.streak).toFixed(1)} <PaperIcon size={14} /> / hr
+                    {paperRateForStreak(makerStreak).toFixed(1)} <PaperIcon size={14} /> / hr
                   </span>
                 </div>
               </div>

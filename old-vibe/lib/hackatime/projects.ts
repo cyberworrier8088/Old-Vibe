@@ -10,7 +10,7 @@ import {
   getHackatimeProfile,
   getHackatimeProjects,
   getHackatimeStreak,
-  getHackatimeSummaries,
+  getHackatimeProjectsFiltered,
   getHackatimeProjectDetails,
 } from "./client";
 import type { HackatimeHeartbeat, HackatimeProfile } from "./client";
@@ -129,7 +129,8 @@ export type ProjectAuditBreakdown = {
 const TTL_MS = 60_000;
 const cache = new Map<string, { at: number; projects: PickerProject[] }>();
 
-async function forget(sub: string) {
+/** Drops the cached project list and the stored token, for a disconnect or a token that stopped working. */
+export async function forget(sub: string) {
   cache.delete(sub);
   await getDb().update(users).set({ hackatimeToken: null }).where(eq(users.sub, sub));
 }
@@ -152,59 +153,18 @@ export async function getPickerProjects(
   }
 
   try {
-    // 1. First attempt to fetch summaries from the cutoff date (2026-09-11)
-    // This strictly includes ONLY hours worked from September 11, 2026 onwards.
-    try {
-      const summaries = await getHackatimeSummaries(token, EVENT_START_DATE);
-      if (summaries?.data && summaries.data.length > 0) {
-        const projectTotals = new Map<string, number>();
-
-        for (const day of summaries.data) {
-          if (!day.projects) continue;
-          for (const p of day.projects) {
-            if (!p.name || p.total_seconds <= 0) continue;
-            projectTotals.set(p.name, (projectTotals.get(p.name) ?? 0) + p.total_seconds);
-          }
-        }
-
-        if (projectTotals.size > 0) {
-          const mapped: PickerProject[] = Array.from(projectTotals.entries())
-            .filter(([, seconds]) => seconds > 0)
-            .sort((a, b) => b[1] - a[1])
-            .map(([name, seconds]) => ({
-              key: name,
-              seconds,
-              hours: formatHours(seconds),
-              decimalHours: Math.round((seconds / 3600) * 10) / 10,
-              cutoffApplied: true,
-            }));
-
-          cache.set(user.sub, { at: Date.now(), projects: mapped });
-          return mapped;
-        }
-      }
-    } catch (summaryError) {
-      console.warn("[hackatime] summaries query fallback to projects list:", summaryError);
-    }
-
-    // 2. Fallback: query projects list
-    const { projects } = await getHackatimeProjects(token);
+    // Hackatime applies the start date itself, so a project that began before the event still
+    // shows the hours worked since it, and nothing earlier.
+    const { projects } = await getHackatimeProjectsFiltered(token, { startDate: EVENT_START_DATE });
     const mapped: PickerProject[] = projects
-      .filter((project) => {
-        if (!project.name || project.total_seconds <= 0) return false;
-        // If project was created before the cutoff date, cut off / exclude:
-        if (project.created_at && new Date(project.created_at) < EVENT_START_DATE_OBJ) {
-          return false;
-        }
-        return true;
-      })
+      .filter((project) => project.name && project.total_seconds > 0)
       .sort((a, b) => b.total_seconds - a.total_seconds)
       .map((project) => ({
         key: project.name,
         seconds: project.total_seconds,
         hours: formatHours(project.total_seconds),
         decimalHours: Math.round((project.total_seconds / 3600) * 10) / 10,
-        cutoffApplied: false,
+        cutoffApplied: true,
       }));
 
     cache.set(user.sub, { at: Date.now(), projects: mapped });
