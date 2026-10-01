@@ -1,74 +1,56 @@
-# Old Vibe
+# Old Vibe, the app
 
-A Hack Club "You Ship, We Ship" program. Makers write software by hand, track their time with
-Hackatime, submit it, and earn Paper to spend in the Old Vibe shop.
+Notes for working on the code. The overview of the program is in the [root README](../README.md).
 
-Maintained by @imu
+Next.js (App Router), TypeScript, Postgres through Drizzle, plain CSS Modules.
 
-## How it works
-
-1. A maker signs in with Hack Club Auth and connects Hackatime.
-2. They pick the Hackatime projects they worked on and submit a repo, a playable demo and a screenshot.
-3. A reviewer opens the submission in the review workstation, checks the audit (heartbeats, AI traces,
-   double dipping, README) and records a decision with approved hours.
-4. Approved hours become Paper in the ledger. Paper buys items in the shop; orders are fulfilled by hand.
-
-## Stack
-
-Next.js (App Router), React, TypeScript, Postgres with Drizzle, CSS Modules. No UI framework.
-
-## Running it locally
+## Setup
 
 ```bash
-cp .env.example .env     # then fill in the values below
-docker compose up -d db  # or point DATABASE_URL at any Postgres
+cp .env.example .env
+docker compose up -d db     # or use any Postgres and set DATABASE_URL
 npm install
 npm run db:migrate
-npm run dev              # http://localhost:3000
+npm run dev
 ```
 
-No OAuth credentials yet? `npm run dev:login` creates a test user in your local database and prints a
-cookie to paste into the browser console. Add `-- --reviewer` for reviewer access.
+If you have no OAuth credentials yet, `npm run dev:login` creates a test user in your local
+database and prints a cookie to paste into the browser console. Add `-- --reviewer` to get the
+reviewer pages. It refuses to run against a database that is not on localhost.
 
-### Environment
+## Environment
 
-| Variable | What it is |
-| --- | --- |
-| `DATABASE_URL` | Postgres connection string |
-| `APP_URL` | Public origin, used for OAuth redirects |
-| `SESSION_SECRET` | 32+ random characters, signs session cookies |
-| `TOKEN_ENCRYPTION_KEY` | Encrypts stored Hackatime tokens |
-| `HCA_CLIENT_ID`, `HCA_CLIENT_SECRET`, `HCA_ISSUER` | Hack Club Auth app |
-| `HACKATIME_CLIENT_ID`, `HACKATIME_CLIENT_SECRET`, `HACKATIME_BASE_URL` | Hackatime OAuth app |
-| `ORGANIZER_SLACK_IDS` | Comma-separated Slack member IDs allowed to review. Empty means nobody; `*` means everyone |
-| `SUPERVIEWER_WEBHOOK_SECRET` | Shared secret for decisions pushed from an external review backend |
+The ones people trip over:
 
-Never commit `.env`. Rotate any secret that has been pasted into a chat or a ticket.
+- `SESSION_SECRET` needs to be 32 or more random characters.
+- `TOKEN_ENCRYPTION_KEY` encrypts the Hackatime tokens we store.
+- `ORGANIZER_SLACK_IDS` is a comma separated list of Slack member IDs allowed to review. Empty
+  means nobody can, and `*` means everyone can, so be careful with it.
+- `HCA_*` are the Hack Club Auth credentials, `HACKATIME_*` are the Hackatime OAuth app.
+- The redirect URIs to register are `APP_URL/api/auth/callback` and
+  `APP_URL/api/hackatime/callback`.
+- `SUPERVIEWER_*` are only needed if reviews go to an external Superviewer instead of the built
+  in review desk.
 
-Redirect URIs to register: `<APP_URL>/api/auth/callback` (Hack Club Auth) and
-`<APP_URL>/api/hackatime/callback` (Hackatime).
+Do not commit `.env`. If a secret ever lands in a chat or an issue, rotate it.
 
-## Scripts
+## Where things are
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` / `build` / `start` | Next.js |
-| `npm run typecheck` / `lint` | Checks that must pass before merging |
-| `npm run db:generate` / `db:migrate` | Drizzle migrations |
-| `npm run db:seed-shop` | Seed the shop catalogue |
-| `npm run dev:login` | Local test sign-in (refuses non-local databases) |
+- `app/(site)` the public pages, `app/(app)` the signed in app, `app/api` the routes
+- `lib/hackatime` the Hackatime client and the review audit (AI traces, double dipping, pasted
+  code, cadence)
+- `lib/review` the review backend, local or external
+- `lib/rewards.ts` the Paper rate and what a Paper costs us. Change it together with shop prices
+- `proxy.ts` sends signed out visitors away from `/dash` and `/shop`
 
-## Project layout
+## Things that have bitten us
 
-- `app/(site)` public pages, `app/(app)` signed-in app (`dash`, `shop`), `app/api` route handlers
-- `lib/hackatime` Hackatime client and the fraud/authenticity analysis
-- `lib/review` pluggable review backend (local, or an external Superviewer)
-- `lib/rewards.ts` the Paper rate; keep it in step with shop prices
-- `proxy.ts` gates `/dash` and `/shop` behind a session
+CSS Modules do not complain about a class that does not exist, a `var(--x)` that is not defined,
+or a missing closing brace. A missing brace once switched off the whole mobile layout of the
+review page without a single error. If you edit a stylesheet, look at the page.
 
-## Conventions
+The theme is light. In `app/tokens.css`, `--night` is the cream page and `--cream` is the ink, which
+reads backwards, so check before you reuse a colour.
 
-- CSS Modules do not fail the build on a missing class, an undefined `var(--x)` or an unbalanced brace.
-  Check these when you touch a stylesheet.
-- Colours come from `app/tokens.css`. `--night` is the cream page, `--cream` is the ink.
-- Reviewer-only data never goes to the browser: pass client components only the fields they render.
+Client components only get the fields they draw. Do not pass a whole database row from a server
+component.
