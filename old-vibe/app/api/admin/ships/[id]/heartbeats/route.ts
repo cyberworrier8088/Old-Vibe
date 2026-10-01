@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 
 import { requireOrganizer } from "@/lib/auth/organizer";
@@ -10,6 +9,22 @@ import { getHackatimeHeartbeats } from "@/lib/hackatime/client";
 import { EVENT_START_DATE } from "@/lib/hackatime/projects";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Quote a CSV cell. Makers control file paths and project names, and a cell that starts with
+ * = + - @ would run as a formula when a reviewer opens the export in a spreadsheet, so those are
+ * prefixed with an apostrophe.
+ */
+function csvCell(value: string | undefined | null): string {
+  let text = value ?? "";
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+/** Collapse whitespace so a value with a newline cannot start a fake row in the export header. */
+function oneLine(value: string | undefined | null): string {
+  return (value ?? "").replace(/\s+/g, " ").trim();
+}
 
 export async function GET(
   request: Request,
@@ -31,7 +46,7 @@ export async function GET(
     .where(eq(projects.id, id))
     .limit(1);
 
-  if (!row) notFound();
+  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const { project, maker } = row;
 
@@ -147,13 +162,13 @@ export async function GET(
       return [
         hb.time ?? "",
         dateStr,
-        `"${(hb.project ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.entity ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.language ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.editor ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.operating_system ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.machine ?? "").replace(/"/g, '""')}"`,
-        `"${(hb.category ?? "").replace(/"/g, '""')}"`,
+        csvCell(hb.project),
+        csvCell(hb.entity),
+        csvCell(hb.language),
+        csvCell(hb.editor),
+        csvCell(hb.operating_system),
+        csvCell(hb.machine),
+        csvCell(hb.category),
         hb.is_write ? "true" : "false",
         hb.lines ?? "",
       ].join(",");
@@ -162,8 +177,8 @@ export async function GET(
     const csvContent = [
       `# Tool: Old-Vibe Ari-Inspector Export`,
       `# Scope: ${scope.toUpperCase()}`,
-      `# Maker: ${maker.name} (@${maker.slackId})`,
-      `# Project: ${project.title}`,
+      `# Maker: ${oneLine(maker.name)} (@${oneLine(maker.slackId)})`,
+      `# Project: ${oneLine(project.title)}`,
       `# Total Heartbeats: ${exportHeartbeats.length}`,
       `# Write Ratio: ${writeRatio}%`,
       headers.join(","),

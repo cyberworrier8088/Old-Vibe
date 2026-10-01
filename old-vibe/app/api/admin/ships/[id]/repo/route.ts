@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 
 import { requireOrganizer } from "@/lib/auth/organizer";
@@ -47,7 +46,7 @@ export async function PATCH(
     .where(eq(projects.id, id))
     .returning({ id: projects.id, repoUrl: projects.repoUrl });
 
-  if (!updated) notFound();
+  if (!updated) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   return NextResponse.json({ success: true, project: updated });
 }

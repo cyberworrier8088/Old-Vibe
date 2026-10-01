@@ -69,6 +69,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         userSub: order.userSub,
         delta: order.cost,
         reason: "manual",
+        // Refund in the currency the order was paid in, not the ledger's paper default.
+        currency: order.costCurrency,
         note: `refund for ${order.itemName}`,
       });
 

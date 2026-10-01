@@ -6,7 +6,8 @@ export function publicOrigin(request: NextRequest): string {
 
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (host) {
-    const proto = request.headers.get("x-forwarded-proto") ?? "https";
+    const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    const proto = forwarded || request.nextUrl.protocol.replace(/:$/, "");
     return `${proto}://${host}`;
   }
 

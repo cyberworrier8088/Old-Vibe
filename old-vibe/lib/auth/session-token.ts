@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export const SESSION_COOKIE = "3am_session";
+export const SESSION_COOKIE = "oldvibe_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 
 export type Session = { sub: string };

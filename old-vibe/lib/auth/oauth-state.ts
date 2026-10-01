@@ -11,10 +11,13 @@ export function parseOAuthState(state: string | null): { nonce: string | null; r
   if (!state) return { nonce: null };
   const dot = state.indexOf(".");
   if (dot === -1) return { nonce: state };
-  return {
-    nonce: state.slice(0, dot),
-    returnTo: safeReturnTo(decodeURIComponent(state.slice(dot + 1))),
-  };
+  let returnTo: string | undefined;
+  try {
+    returnTo = safeReturnTo(decodeURIComponent(state.slice(dot + 1)));
+  } catch {
+    // Malformed escape in an attacker-supplied state: ignore it rather than throw a 500.
+  }
+  return { nonce: state.slice(0, dot), returnTo };
 }
 
 export function safeReturnTo(value: string | undefined | null): string | undefined {

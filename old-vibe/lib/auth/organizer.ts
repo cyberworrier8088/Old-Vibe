@@ -10,12 +10,10 @@ export function organizerSlackIds(): string[] {
 export function isOrganizer(user: Pick<User, "slackId"> | null | undefined): boolean {
   if (!user || !user.slackId?.trim()) return false;
   const list = organizerSlackIds();
-  // If specific organizer Slack IDs are provided, restrict to those (supports wildcard '*')
-  if (list.length > 0 && !list.includes("*")) {
-    return list.includes(user.slackId.trim().toUpperCase());
-  }
-  // Otherwise, all Slack-verified users have reviewer access
-  return true;
+  // Fail closed: with no list configured nobody is a reviewer. Everyone is only possible by
+  // explicitly setting ORGANIZER_SLACK_IDS=*.
+  if (list.includes("*")) return true;
+  return list.includes(user.slackId.trim().toUpperCase());
 }
 
 export async function requireOrganizer() {
