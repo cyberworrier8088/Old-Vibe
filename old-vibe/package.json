@@ -17,6 +17,7 @@
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "db:seed-shop": "tsx --env-file=.env scripts/seed-shop.ts",
     "db:seed-shop:prod": "tsx --env-file=.env --env-file=.env.prod scripts/seed-shop.ts",
+    "dev:login": "tsx --env-file=.env scripts/dev-login.ts",
     "migrate:report": "tsx --env-file=.env scripts/migrate-report.ts",
     "migrate:import": "tsx --env-file=.env scripts/migrate-import.ts",
     "migrate:beans": "tsx --env-file=.env scripts/migrate-beans.ts",
@@ -27,22 +28,22 @@
     "promote": "tsx --env-file=.env --env-file=.env.prod scripts/promote.ts"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.2",
-    "jose": "^6.2.9",
-    "next": "16.3.1",
+    "drizzle-orm": "^0.45.3",
+    "jose": "^6.2.12",
+    "next": "16.3.8",
     "postgres": "^3.4.9",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "drizzle-kit": "^0.31.10",
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.1",
-    "prettier": "3.9.6",
-    "tsx": "^4.23.12",
+    "eslint-config-next": "16.3.8",
+    "prettier": "3.9.9",
+    "tsx": "^4.23.15",
     "typescript": "6.0.3"
   }
 }
