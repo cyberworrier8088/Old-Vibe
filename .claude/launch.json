@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "old-vibe",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "old-vibe", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}
